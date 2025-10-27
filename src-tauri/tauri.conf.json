@@ -1,0 +1,66 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "App Launcher",
+  "version": "0.1.0",
+  "identifier": "com.applauncher.dev",
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "frontendDist": "../dist"
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "App Launcher",
+        "width": 800,
+        "height": 600,
+        "resizable": false,
+        "center": true,
+        "alwaysOnTop": true,
+        "decorations": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "hiddenTitle": true,
+        "url": "index.html"
+      }
+    ],
+    "security": {
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/**",
+          "$RESOURCE/**"
+        ]
+      },
+      "capabilities": [
+        {
+          "identifier": "main-capability",
+          "description": "Capability for the main window",
+          "windows": ["main"],
+          "permissions": [
+            "core:default",
+            "core:path:default",
+            "dialog:allow-open",
+            "dialog:allow-save",
+            "shell:allow-open"
+          ]
+        }
+      ]
+    },
+    "withGlobalTauri": true
+  },
+  "plugins": {}
+}
+

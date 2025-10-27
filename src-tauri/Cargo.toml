@@ -1,0 +1,57 @@
+[package]
+name = "app-launcher"
+version = "0.1.0"
+description = "A cross-platform application launcher"
+authors = ["you"]
+license = ""
+repository = ""
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+# Tauri core
+tauri = { version = "2.0", features = ["protocol-asset"] }
+tauri-plugin-global-shortcut = "2.0"
+tauri-plugin-autostart = "2.0"
+tauri-plugin-dialog = "2.0"
+tauri-plugin-shell = "2.0"
+
+# Database
+rusqlite = { version = "0.31", features = ["bundled"] }
+r2d2 = "0.8"
+r2d2_sqlite = "0.24"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Icon extraction
+image = "0.24"
+
+# Terminal emulator
+portable-pty = "0.8"
+
+# Utilities
+anyhow = "1.0"
+thiserror = "1.0"
+log = "0.4"
+env_logger = "0.11"
+
+# Platform-specific dependencies
+[target.'cfg(target_os = "windows")'.dependencies]
+winapi = { version = "0.3", features = ["shellapi", "winuser"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.25"
+objc = "0.2"
+icns = "0.3"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
