@@ -25,13 +25,32 @@ pub fn prevent_app_termination() {
             eprintln!("!!! applicationShouldTerminate called - preventing app termination");
 
             // Close the key window (the focused window) instead of quitting the app
+            // For the main launcher window, we'll hide it instead of closing
             unsafe {
                 let app = NSApp();
                 let key_window: id = msg_send![app, keyWindow];
 
                 if key_window != nil {
-                    eprintln!("!!! Closing key window instead of quitting");
-                    let _: () = msg_send![key_window, close];
+                    // Get the window title to determine if it's the launcher
+                    let title: id = msg_send![key_window, title];
+                    let title_str: *const i8 = msg_send![title, UTF8String];
+                    let title_string = if !title_str.is_null() {
+                        std::ffi::CStr::from_ptr(title_str).to_string_lossy().to_string()
+                    } else {
+                        String::new()
+                    };
+
+                    eprintln!("!!! Key window title: '{}'", title_string);
+
+                    if title_string == "App Launcher" {
+                        // Hide the launcher window instead of closing it
+                        eprintln!("!!! Hiding launcher window");
+                        let _: () = msg_send![key_window, orderOut: nil];
+                    } else {
+                        // Close other windows (webapps, terminals)
+                        eprintln!("!!! Closing window: {}", title_string);
+                        let _: () = msg_send![key_window, close];
+                    }
                 }
             }
 
