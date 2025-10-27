@@ -92,6 +92,9 @@ fn launch_webapp(app: &App, app_handle: &AppHandle) -> Result<()> {
     .data_directory(std::path::PathBuf::from(session_path))
     .build()?;
 
+    // Note: Webapp windows close normally when user clicks X or presses Cmd+Q
+    // The app won't quit because the system tray keeps it running
+
     Ok(())
 }
 

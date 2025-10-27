@@ -8,7 +8,10 @@ mod launcher;
 mod shortcut_manager;
 mod terminal;
 
-use tauri::Manager;
+#[cfg(target_os = "macos")]
+mod macos_delegate;
+
+use tauri::{Manager, menu::{MenuBuilder, MenuItemBuilder}, tray::{TrayIconBuilder, TrayIconEvent}};
 use tauri_plugin_autostart::ManagerExt;
 
 fn main() {
@@ -24,6 +27,15 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
+            // Set activation policy to Accessory on macOS
+            // This makes the app a menu bar app that doesn't appear in the Dock
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
+            // Install custom macOS delegate to prevent Cmd+Q from quitting the app
+            #[cfg(target_os = "macos")]
+            macos_delegate::prevent_app_termination();
+
             // Get app data directory
             let app_data_dir = app.path().app_data_dir()
                 .expect("Failed to get app data directory");
@@ -72,6 +84,49 @@ fn main() {
                 }
             });
 
+            // Setup system tray
+            let show_item = MenuItemBuilder::with_id("show", "Show Launcher").build(app)?;
+            let quit_item = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
+            let menu = MenuBuilder::new(app)
+                .item(&show_item)
+                .separator()
+                .item(&quit_item)
+                .build()?;
+
+            let _tray = TrayIconBuilder::new()
+                .menu(&menu)
+                .icon(app.default_window_icon().unwrap().clone())
+                .on_menu_event(|app, event| {
+                    match event.id().as_ref() {
+                        "show" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                        "quit" => {
+                            app.exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click { button, .. } = event {
+                        if button == tauri::tray::MouseButton::Left {
+                            let app = tray.app_handle();
+                            if let Some(window) = app.get_webview_window("main") {
+                                if window.is_visible().unwrap_or(false) {
+                                    let _ = window.hide();
+                                } else {
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
+                            }
+                        }
+                    }
+                })
+                .build(app)?;
+
             // Note: Window will stay visible until user presses Escape or the global shortcut again
             // This prevents the window from disappearing when releasing the keyboard shortcut
 
@@ -91,8 +146,14 @@ fn main() {
             commands::update_global_shortcut,
             commands::toggle_main_window,
             commands::hide_main_window,
+            commands::quit_app,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app_handle, _event| {
+            // With ActivationPolicy::Accessory, the app becomes a menu bar app
+            // The system tray keeps the app running even when all windows are closed
+            // No need to handle ExitRequested - the tray icon keeps the app alive
+        });
 }
 

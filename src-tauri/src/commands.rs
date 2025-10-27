@@ -160,3 +160,11 @@ pub fn hide_main_window(app_handle: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Quit the application completely
+/// This is the only way to actually quit the app since Cmd+Q is intercepted on macOS
+#[tauri::command]
+pub fn quit_app(app_handle: AppHandle) -> Result<(), String> {
+    app_handle.exit(0);
+    Ok(())
+}
+
