@@ -319,6 +319,48 @@ if (isTyping && e.key !== 'Escape') {
 
 ---
 
+### Issue 9: Close Button Should Hide Window, Not Quit App ✅ FIXED
+
+**Problem:** Clicking the close button (X) on the window would quit the entire application. For a launcher app that should run in the background, this is incorrect behavior.
+
+**Expected Behavior:** The close button should hide the window (like pressing Escape), keeping the app running in the background so you can reopen it with the global shortcut.
+
+**Root Cause:** Tauri's default behavior is to quit the application when the last window is closed.
+
+**Solution:**
+Added a window event handler that intercepts the close request:
+1. Listen for `CloseRequested` window events
+2. Prevent the default close behavior with `api.prevent_close()`
+3. Hide the window instead using `window.hide()`
+
+**Implementation:**
+```rust
+window.on_window_event(move |event| {
+    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+        api.prevent_close();  // Don't quit
+        let _ = window_clone.hide();  // Hide instead
+    }
+});
+```
+
+**Files Modified:**
+- `src-tauri/src/main.rs` - Added close event handler
+
+**How to Test:**
+1. Start the app and open the launcher window
+2. Click the close button (X) or red dot on macOS
+   - ✅ Window should hide (not quit)
+3. Press the global shortcut (e.g., Cmd+Shift+Space)
+   - ✅ Window should reappear
+4. The app should still be running in the background
+
+**Quitting the App:**
+Since the close button now only hides the window, to actually quit the app:
+- **macOS**: Cmd+Q or right-click dock icon → Quit
+- **Windows/Linux**: System tray icon → Quit (if implemented) or Task Manager
+
+---
+
 ## Summary
 
 All issues are now resolved:
@@ -331,6 +373,7 @@ All issues are now resolved:
 6. **Read-Only Shortcut Fields**: Shortcut inputs only editable via Record button
 7. **Icon Loading**: Auto-extracted icons from binaries now load correctly
 8. **Input Field Protection**: Shortcuts don't interfere with typing in text fields
+9. **Close Button Behavior**: Close button hides window instead of quitting app
 
 ## Testing Commands
 

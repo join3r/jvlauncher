@@ -57,9 +57,20 @@ fn main() {
                 }
             }
 
-            // Get main window
-            let _window = app.get_webview_window("main")
+            // Get main window and setup close handler
+            let window = app.get_webview_window("main")
                 .expect("Failed to get main window");
+
+            // Intercept close event to hide window instead of quitting
+            let window_clone = window.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    // Prevent default close behavior
+                    api.prevent_close();
+                    // Hide window instead
+                    let _ = window_clone.hide();
+                }
+            });
 
             // Note: Window will stay visible until user presses Escape or the global shortcut again
             // This prevents the window from disappearing when releasing the keyboard shortcut
