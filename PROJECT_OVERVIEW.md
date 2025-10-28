@@ -35,7 +35,7 @@ App Launcher is a cross-platform application launcher inspired by tools like Alf
 - Visual app icons with names
 - Keyboard shortcuts displayed
 
-**Keyboard Navigation**
+**Keyboard Navigation** 
 - Arrow keys to navigate
 - Enter to launch
 - Escape to hide

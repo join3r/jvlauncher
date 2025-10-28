@@ -73,7 +73,8 @@
             "core:window:allow-close",
             "core:window:allow-set-focus",
             "dialog:allow-open",
-            "dialog:allow-save"
+            "dialog:allow-save",
+            "os:allow-platform"
           ]
         },
         {
