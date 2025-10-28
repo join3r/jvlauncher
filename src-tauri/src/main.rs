@@ -26,6 +26,7 @@ fn main() {
         ))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_os::init())
         .setup(|app| {
             // Set activation policy to Accessory on macOS
             // This makes the app a menu bar app that doesn't appear in the Dock
@@ -72,6 +73,21 @@ fn main() {
             // Get main window and setup close handler
             let window = app.get_webview_window("main")
                 .expect("Failed to get main window");
+
+            // Apply macOS-specific window effects (vibrancy/glassmorphism)
+            #[cfg(target_os = "macos")]
+            {
+                use tauri::window::Effect;
+                use tauri::window::EffectState;
+
+                // Apply vibrancy effect for liquid glass appearance
+                let _ = window.set_effects(tauri::utils::config::WindowEffectsConfig {
+                    effects: vec![Effect::HudWindow],
+                    state: Some(EffectState::FollowsWindowActiveState),
+                    radius: Some(12.0),
+                    color: None,
+                });
+            }
 
             // Intercept close event to hide window instead of quitting
             let window_clone = window.clone();

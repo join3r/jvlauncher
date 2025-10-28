@@ -20,6 +20,9 @@ A cross-platform application launcher built with Tauri 2.0 and Rust. Launch appl
   - Adjustable grid size
   - Configure start at login
   - Per-app keyboard shortcuts
+- **Platform-Specific Theming**:
+  - **macOS**: Native liquid glass (glassmorphism) theme with vibrancy and backdrop blur
+  - **Windows/Linux**: Material Design theme with solid backgrounds
 - **Cross-Platform**: Works on macOS, Linux, and Windows
 
 ## Development
@@ -67,6 +70,31 @@ cargo tauri dev
 - **Enter**: Launch selected app
 - **Escape**: Hide launcher window
 - **Custom Shortcuts**: Assign per-app shortcuts for quick access
+
+## Platform-Specific Theming
+
+### macOS Liquid Glass Theme
+
+On macOS, the application features a native "liquid glass" (glassmorphism) theme that integrates seamlessly with the macOS design language:
+
+- **Translucent Backgrounds**: Semi-transparent windows with backdrop blur
+- **Vibrancy Effects**: Native macOS vibrancy using the HudWindow effect
+- **Adaptive Blur**: 40px blur in light mode, 60px in dark mode
+- **System Integration**: Follows macOS Human Interface Guidelines
+- **Native Colors**: Uses macOS system blue (#007aff) as accent color
+
+The liquid glass theme automatically activates when running on macOS and supports both light and dark modes.
+
+### Material Design Theme (Windows/Linux)
+
+On Windows and Linux, the application uses a Material Design theme:
+
+- **Solid Backgrounds**: No transparency for better performance
+- **Material Colors**: Material Design color palette
+- **Standard Shadows**: Material elevation shadows
+- **Material Blue**: #2196f3 as accent color
+
+For more details, see [MACOS_LIQUID_GLASS_THEME.md](MACOS_LIQUID_GLASS_THEME.md).
 
 ## Configuration
 

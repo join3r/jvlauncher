@@ -175,30 +175,36 @@ pub fn resize_main_window(app_handle: AppHandle, grid_cols: i32, grid_rows: i32)
 
     // Calculate window dimensions based on grid
     // Icon item dimensions:
-    // - Icon: 64px
-    // - Padding: 14px * 2 = 28px
-    // - Text height: ~50px (name + shortcut)
-    // - Total per item: ~142px height, ~120px width
-    const ITEM_WIDTH: f64 = 120.0;
-    const ITEM_HEIGHT: f64 = 142.0;
-    const GRID_GAP: f64 = 20.0;
+    // - Icon: 52px (reduced from 64px for better density)
+    // - Padding: 12px * 2 = 24px
+    // - Text height: ~46px (name + shortcut)
+    // - Total per item: ~122px height, ~100px width
+    const ITEM_WIDTH: f64 = 100.0;
+    const ITEM_HEIGHT: f64 = 122.0;
+    const GRID_GAP: f64 = 16.0;
     const PADDING_HORIZONTAL: f64 = 48.0; // 24px left + 24px right
-    const PADDING_VERTICAL: f64 = 80.0; // 56px top + 24px bottom
-    const EXTRA_VERTICAL: f64 = 100.0; // Extra space for buttons and margins
+    const PADDING_TOP: f64 = 24.0; // 24px top padding
+    const PADDING_BOTTOM: f64 = 24.0; // 24px bottom padding
+    const FLOATING_BUTTONS_HEIGHT: f64 = 72.0; // Space for floating buttons (48px button + 24px margin)
 
     // Calculate dimensions
     let width = (ITEM_WIDTH * grid_cols as f64) + (GRID_GAP * (grid_cols - 1) as f64) + PADDING_HORIZONTAL;
-    let height = (ITEM_HEIGHT * grid_rows as f64) + (GRID_GAP * (grid_rows - 1) as f64) + PADDING_VERTICAL + EXTRA_VERTICAL;
+    let height = (ITEM_HEIGHT * grid_rows as f64) + (GRID_GAP * (grid_rows - 1) as f64) + PADDING_TOP + PADDING_BOTTOM + FLOATING_BUTTONS_HEIGHT;
+
+    println!("Calculated window size: {}x{} for grid {}x{}", width, height, grid_cols, grid_rows);
 
     // Apply min/max constraints
-    let width = width.max(400.0).min(1400.0);
-    let height = height.max(300.0).min(1000.0);
+    let width = width.max(400.0).min(2000.0);
+    let height = height.max(200.0).min(1400.0);
+
+    println!("After constraints: {}x{}", width, height);
 
     // Get main window and resize
     if let Some(window) = app_handle.get_webview_window("main") {
-        window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
-            width: width as u32,
-            height: height as u32,
+        // Use Logical size instead of Physical to handle high-DPI displays correctly
+        window.set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: width,
+            height: height,
         }))
         .map_err(|e| format!("Failed to resize window: {}", e))?;
 

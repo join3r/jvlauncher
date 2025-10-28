@@ -20,19 +20,24 @@
     ]
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "App Launcher",
-        "width": 800,
-        "height": 600,
-        "resizable": false,
+        "width": 1000,
+        "height": 700,
+        "minWidth": 600,
+        "minHeight": 400,
+        "maxWidth": 2000,
+        "maxHeight": 1400,
+        "resizable": true,
         "center": true,
         "alwaysOnTop": true,
-        "decorations": true,
+        "decorations": false,
         "skipTaskbar": true,
         "visible": false,
-        "hiddenTitle": true,
-        "url": "index.html"
+        "url": "index.html",
+        "transparent": true
       }
     ],
     "security": {
@@ -54,7 +59,8 @@
             "core:path:default",
             "dialog:allow-open",
             "dialog:allow-save",
-            "shell:allow-open"
+            "shell:allow-open",
+            "os:allow-platform"
           ]
         },
         {
