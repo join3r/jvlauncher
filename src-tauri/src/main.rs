@@ -97,11 +97,20 @@ fn main() {
             // Intercept close event to hide window instead of quitting
             let window_clone = window.clone();
             window.on_window_event(move |event| {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    // Prevent default close behavior
-                    api.prevent_close();
-                    // Hide window instead
-                    let _ = window_clone.hide();
+                match event {
+                    tauri::WindowEvent::CloseRequested { api, .. } => {
+                        // Prevent default close behavior
+                        api.prevent_close();
+                        // Hide window instead
+                        let _ = window_clone.hide();
+                    }
+                    tauri::WindowEvent::Focused(focused) => {
+                        // Hide window when it loses focus
+                        if !focused {
+                            let _ = window_clone.hide();
+                        }
+                    }
+                    _ => {}
                 }
             });
 
