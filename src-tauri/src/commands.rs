@@ -1,5 +1,5 @@
 use crate::database::{App, DbPool, NewApp, Settings};
-use crate::{database, icon_extractor, launcher};
+use crate::{database, icon_extractor, launcher, terminal};
 use tauri::{AppHandle, Manager, State};
 
 /// Get all apps from the database
@@ -355,5 +355,57 @@ pub fn open_edit_app_window(app_handle: AppHandle, app_id: i64) -> Result<(), St
     });
 
     Ok(())
+}
+
+/// Send input to a terminal window
+#[tauri::command]
+pub fn send_terminal_input(
+    app_handle: AppHandle,
+    window_label: String,
+    data: String,
+) -> Result<(), String> {
+    use std::io::Write;
+
+    if let Some(state) = app_handle.try_state::<terminal::TerminalState>() {
+        if let Ok(windows) = state.windows.lock() {
+            if let Some(handle) = windows.get(&window_label) {
+                if let Ok(mut writer) = handle.writer.lock() {
+                    writer.write_all(data.as_bytes())
+                        .map_err(|e| format!("Failed to write to terminal: {}", e))?;
+                    writer.flush()
+                        .map_err(|e| format!("Failed to flush terminal: {}", e))?;
+                    return Ok(());
+                }
+            }
+        }
+    }
+    Err("Terminal window not found".to_string())
+}
+
+/// Resize a terminal PTY
+#[tauri::command]
+pub fn resize_terminal(
+    app_handle: AppHandle,
+    window_label: String,
+    rows: u16,
+    cols: u16,
+) -> Result<(), String> {
+    if let Some(state) = app_handle.try_state::<terminal::TerminalState>() {
+        if let Ok(windows) = state.windows.lock() {
+            if let Some(handle) = windows.get(&window_label) {
+                if let Ok(master) = handle.master.lock() {
+                    master.resize(portable_pty::PtySize {
+                        rows,
+                        cols,
+                        pixel_width: 0,
+                        pixel_height: 0,
+                    })
+                    .map_err(|e| format!("Failed to resize terminal: {}", e))?;
+                    return Ok(());
+                }
+            }
+        }
+    }
+    Err("Terminal window not found".to_string())
 }
 

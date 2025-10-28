@@ -53,6 +53,11 @@ fn main() {
             // Store database pool in app state
             app.manage(pool.clone());
 
+            // Initialize terminal state
+            app.manage(terminal::TerminalState {
+                windows: std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+            });
+
             // Get settings and register global shortcut
             if let Ok(settings) = database::get_settings(&pool) {
                 let app_handle = app.handle().clone();
@@ -167,6 +172,8 @@ fn main() {
             commands::open_add_app_window,
             commands::open_edit_app_window,
             commands::resize_main_window,
+            commands::send_terminal_input,
+            commands::resize_terminal,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

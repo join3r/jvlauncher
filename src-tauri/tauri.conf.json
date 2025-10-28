@@ -75,6 +75,17 @@
             "dialog:allow-open",
             "dialog:allow-save"
           ]
+        },
+        {
+          "identifier": "terminal-windows-capability",
+          "description": "Capability for terminal windows",
+          "windows": ["terminal_*"],
+          "permissions": [
+            "core:default",
+            "core:event:default",
+            "core:window:allow-close",
+            "core:window:allow-set-focus"
+          ]
         }
       ]
     },
