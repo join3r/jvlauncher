@@ -147,6 +147,10 @@ fn main() {
             commands::toggle_main_window,
             commands::hide_main_window,
             commands::quit_app,
+            commands::open_settings_window,
+            commands::open_add_app_window,
+            commands::open_edit_app_window,
+            commands::resize_main_window,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

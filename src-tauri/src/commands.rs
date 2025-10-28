@@ -168,3 +168,186 @@ pub fn quit_app(app_handle: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Resize the main window based on grid dimensions
+#[tauri::command]
+pub fn resize_main_window(app_handle: AppHandle, grid_cols: i32, grid_rows: i32) -> Result<(), String> {
+    use tauri::Manager;
+
+    // Calculate window dimensions based on grid
+    // Icon item dimensions:
+    // - Icon: 64px
+    // - Padding: 14px * 2 = 28px
+    // - Text height: ~50px (name + shortcut)
+    // - Total per item: ~142px height, ~120px width
+    const ITEM_WIDTH: f64 = 120.0;
+    const ITEM_HEIGHT: f64 = 142.0;
+    const GRID_GAP: f64 = 20.0;
+    const PADDING_HORIZONTAL: f64 = 48.0; // 24px left + 24px right
+    const PADDING_VERTICAL: f64 = 80.0; // 56px top + 24px bottom
+    const EXTRA_VERTICAL: f64 = 100.0; // Extra space for buttons and margins
+
+    // Calculate dimensions
+    let width = (ITEM_WIDTH * grid_cols as f64) + (GRID_GAP * (grid_cols - 1) as f64) + PADDING_HORIZONTAL;
+    let height = (ITEM_HEIGHT * grid_rows as f64) + (GRID_GAP * (grid_rows - 1) as f64) + PADDING_VERTICAL + EXTRA_VERTICAL;
+
+    // Apply min/max constraints
+    let width = width.max(400.0).min(1400.0);
+    let height = height.max(300.0).min(1000.0);
+
+    // Get main window and resize
+    if let Some(window) = app_handle.get_webview_window("main") {
+        window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
+            width: width as u32,
+            height: height as u32,
+        }))
+        .map_err(|e| format!("Failed to resize window: {}", e))?;
+
+        // Center the window after resize
+        window.center()
+            .map_err(|e| format!("Failed to center window: {}", e))?;
+    }
+
+    Ok(())
+}
+
+/// Open the settings window
+#[tauri::command]
+pub fn open_settings_window(app_handle: AppHandle) -> Result<(), String> {
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+
+    let window_label = "settings";
+
+    // Disable always-on-top for main window to allow modal to appear on top
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.set_always_on_top(false);
+    }
+
+    // Check if window already exists
+    if let Some(window) = app_handle.get_webview_window(window_label) {
+        window.show().map_err(|e| format!("Failed to show window: {}", e))?;
+        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        return Ok(());
+    }
+
+    // Create new window
+    let window = WebviewWindowBuilder::new(
+        &app_handle,
+        window_label,
+        WebviewUrl::App("settings.html".into())
+    )
+    .title("Settings")
+    .inner_size(540.0, 680.0)
+    .resizable(false)
+    .center()
+    .always_on_top(true)
+    .skip_taskbar(false)
+    .build()
+    .map_err(|e| format!("Failed to create settings window: {}", e))?;
+
+    // Set up close handler to restore main window always-on-top
+    let app_handle_clone = app_handle.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { .. } = event {
+            if let Some(main_window) = app_handle_clone.get_webview_window("main") {
+                let _ = main_window.set_always_on_top(true);
+            }
+        }
+    });
+
+    Ok(())
+}
+
+/// Open the add app window
+#[tauri::command]
+pub fn open_add_app_window(app_handle: AppHandle) -> Result<(), String> {
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+
+    let window_label = "add-app";
+
+    // Disable always-on-top for main window to allow modal to appear on top
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.set_always_on_top(false);
+    }
+
+    // Check if window already exists
+    if let Some(window) = app_handle.get_webview_window(window_label) {
+        window.show().map_err(|e| format!("Failed to show window: {}", e))?;
+        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        return Ok(());
+    }
+
+    // Create new window
+    let window = WebviewWindowBuilder::new(
+        &app_handle,
+        window_label,
+        WebviewUrl::App("app-form.html".into())
+    )
+    .title("Add Application")
+    .inner_size(560.0, 680.0)
+    .resizable(false)
+    .center()
+    .always_on_top(true)
+    .skip_taskbar(false)
+    .build()
+    .map_err(|e| format!("Failed to create add app window: {}", e))?;
+
+    // Set up close handler to restore main window always-on-top
+    let app_handle_clone = app_handle.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { .. } = event {
+            if let Some(main_window) = app_handle_clone.get_webview_window("main") {
+                let _ = main_window.set_always_on_top(true);
+            }
+        }
+    });
+
+    Ok(())
+}
+
+/// Open the edit app window
+#[tauri::command]
+pub fn open_edit_app_window(app_handle: AppHandle, app_id: i64) -> Result<(), String> {
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+
+    let window_label = format!("edit-app-{}", app_id);
+
+    // Disable always-on-top for main window to allow modal to appear on top
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.set_always_on_top(false);
+    }
+
+    // Check if window already exists
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
+        window.show().map_err(|e| format!("Failed to show window: {}", e))?;
+        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        return Ok(());
+    }
+
+    // Create new window
+    let window = WebviewWindowBuilder::new(
+        &app_handle,
+        &window_label,
+        WebviewUrl::App("app-form.html".into())
+    )
+    .title("Edit Application")
+    .inner_size(560.0, 680.0)
+    .resizable(false)
+    .center()
+    .always_on_top(true)
+    .skip_taskbar(false)
+    .build()
+    .map_err(|e| format!("Failed to create edit app window: {}", e))?;
+
+    // Set up close handler to restore main window always-on-top
+    let app_handle_clone = app_handle.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { .. } = event {
+            if let Some(main_window) = app_handle_clone.get_webview_window("main") {
+                let _ = main_window.set_always_on_top(true);
+            }
+        }
+    });
+
+    Ok(())
+}
+

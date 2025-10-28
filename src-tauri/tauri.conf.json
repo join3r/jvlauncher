@@ -56,6 +56,19 @@
             "dialog:allow-save",
             "shell:allow-open"
           ]
+        },
+        {
+          "identifier": "modal-windows-capability",
+          "description": "Capability for modal windows (settings, add-app, edit-app)",
+          "windows": ["settings", "add-app", "edit-app-*"],
+          "permissions": [
+            "core:default",
+            "core:path:default",
+            "core:window:allow-close",
+            "core:window:allow-set-focus",
+            "dialog:allow-open",
+            "dialog:allow-save"
+          ]
         }
       ]
     },
