@@ -129,6 +129,20 @@ async function applyTheme() {
     }
 }
 
+function setTypeSegment(value) {
+    const container = document.getElementById('type-segment');
+    if (!container) return;
+    const buttons = Array.from(container.querySelectorAll('button'));
+    buttons.forEach(btn => btn.classList.toggle('is-active', btn.dataset.value === value));
+}
+
+function getTypeFromSegment() {
+    const container = document.getElementById('type-segment');
+    if (!container) return 'app';
+    const active = container.querySelector('button.is-active');
+    return active ? active.dataset.value : 'app';
+}
+
 // Shortcut recording state
 let isRecording = false;
 let currentRecordingInput = null;
@@ -244,7 +258,7 @@ function updateIconPreview() {
 
 // Update field visibility based on app type
 function updateFieldsVisibility() {
-    const type = document.getElementById('app-type').value;
+    const type = getTypeFromSegment();
     document.getElementById('url-group').style.display = type === 'webapp' ? 'block' : 'none';
     document.getElementById('binary-group').style.display = type !== 'webapp' ? 'block' : 'none';
     document.getElementById('params-group').style.display = type !== 'webapp' ? 'block' : 'none';
@@ -267,8 +281,9 @@ async function loadAppData() {
             
             if (appData) {
                 document.getElementById('form-title').textContent = 'Edit Application';
-                document.getElementById('app-type').value = appData.app_type || 'app';
-                document.getElementById('app-type').disabled = true;
+                setTypeSegment(appData.app_type || 'app');
+                const seg = document.getElementById('type-segment');
+                if (seg) Array.from(seg.querySelectorAll('button')).forEach(b => b.disabled = true);
                 document.getElementById('app-name').value = appData.name || '';
                 document.getElementById('app-url').value = appData.url || '';
                 document.getElementById('app-binary').value = appData.binary_path || '';
@@ -288,7 +303,7 @@ async function loadAppData() {
 async function saveApp() {
     stopRecording();
     
-    const appType = document.getElementById('app-type').value;
+    const appType = getTypeFromSegment();
     const name = document.getElementById('app-name').value.trim();
     const url = document.getElementById('app-url').value.trim();
     const binaryPath = document.getElementById('app-binary').value.trim();
@@ -377,7 +392,19 @@ async function init() {
         await loadAppData();
 
         // App type change handler
-        document.getElementById('app-type').addEventListener('change', updateFieldsVisibility);
+        // Type segmented control
+        const typeSegment = document.getElementById('type-segment');
+        if (typeSegment) {
+            // Default selection
+            setTypeSegment('app');
+            typeSegment.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target && target.tagName === 'BUTTON' && target.dataset.value && !target.disabled) {
+                    setTypeSegment(target.dataset.value);
+                    updateFieldsVisibility();
+                }
+            });
+        }
         updateFieldsVisibility();
 
         // Browse binary button

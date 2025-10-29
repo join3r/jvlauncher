@@ -6,29 +6,27 @@
     <title>Application</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        html {
-            background: #1e1e1e !important; /* Solid background for modal windows */
-        }
+        html, body { height: 100%; }
+        html { background: transparent !important; }
         body {
             margin: 0;
             padding: 0;
-            background: var(--bg-primary) !important;
+            background: #f2f2f7 !important; /* light mode window base */
             color: var(--text-primary);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
+        :root[data-theme="dark"] body { background: #2c2c2e !important; }
         .app-form-container {
             max-width: 520px;
             margin: 0 auto;
-            padding: 28px 28px 24px 28px;
+            padding: 18px 18px 16px 18px;
         }
-        h2 {
-            margin-top: 0;
-            margin-bottom: 24px;
-            font-size: 24px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
+        /* Segmented control (same style as Settings) */
+        .segmented { display: inline-flex; padding: 3px; background: var(--bg-tertiary); border-radius: 10px; border: 0.5px solid var(--border-color); }
+        .segmented button { appearance: none; border: none; background: transparent; padding: 6px 14px; font-size: 14px; color: var(--text-primary); border-radius: 8px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+        .segmented button.is-active { background: var(--accent); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .segmented button[disabled] { opacity: .6; cursor: default; }
+        .form-group { margin-bottom: 14px; }
         .form-group label {
             display: block;
             margin-bottom: 8px;
@@ -47,6 +45,18 @@
             transition: all 0.2s;
             box-sizing: border-box;
         }
+        /* Override global macOS glass inputs so dark mode looks correct */
+        .platform-macos .form-group input,
+        .platform-macos .form-group select {
+            background: var(--bg-tertiary) !important;
+            border: 0.5px solid var(--border-color) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            box-shadow: none !important;
+            color: var(--text-primary) !important;
+        }
+        .form-group input::placeholder { color: color-mix(in srgb, var(--text-secondary) 85%, transparent); }
+        :root[data-theme="dark"] .form-group input::placeholder { color: color-mix(in srgb, var(--text-secondary) 95%, transparent); }
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
@@ -84,28 +94,10 @@
         .btn-success:hover {
             background: #218838;
         }
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        .btn-record {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #6c757d;
-            color: white;
-            white-space: nowrap;
-        }
-        .btn-record:hover {
-            background: #5a6268;
-        }
+        .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 0.5px solid var(--border-color); }
+        .btn-secondary:hover { background: var(--bg-tertiary); }
+        .btn-record { padding: 8px 14px; border: 0.5px solid var(--border-color) !important; border-radius: 8px; font-size: 14px; background: var(--bg-secondary) !important; color: var(--text-primary) !important; cursor: pointer; white-space: nowrap; }
+        .btn-record:hover { background: var(--bg-tertiary) !important; }
         .btn-record.recording {
             background: #dc3545;
             animation: pulse 1s infinite;
@@ -114,12 +106,7 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 24px;
-        }
+        .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; }
         #icon-preview {
             margin-top: 8px;
         }
@@ -132,15 +119,15 @@
 </head>
 <body>
     <div class="app-form-container">
-        <h2 id="form-title">Add Application</h2>
+        <h2 id="form-title" style="display:none;">Add Application</h2>
         
         <div class="form-group">
             <label>Type</label>
-            <select id="app-type">
-                <option value="app">Application</option>
-                <option value="webapp">Web Application</option>
-                <option value="tui">Terminal Application</option>
-            </select>
+            <div class="segmented" id="type-segment">
+                <button data-value="app">Application</button>
+                <button data-value="webapp">Web Application</button>
+                <button data-value="tui">Terminal Application</button>
+            </div>
         </div>
         
         <div class="form-group">
