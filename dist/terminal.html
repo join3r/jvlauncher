@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal</title>
+    <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000000;
+            overflow: hidden;
+        }
+        #terminal {
+            width: 100vw;
+            height: 100vh;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal"></div>
+
+    <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://unpkg.com/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+
+    <script>
+        if (window.__TAURI__) {
+            const { listen } = window.__TAURI__.event;
+            const { invoke } = window.__TAURI__.core;
+            const { getCurrentWindow } = window.__TAURI__.window;
+
+            // Get window label
+            const currentWindow = getCurrentWindow();
+            const windowLabel = currentWindow.label;
+
+            // Initialize xterm.js
+            const term = new Terminal({
+                cursorBlink: true,
+                fontSize: 14,
+                fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                theme: {
+                    background: '#000000',
+                    foreground: '#ffffff'
+                }
+            });
+
+            // Add fit addon
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+
+            // Open terminal
+            term.open(document.getElementById('terminal'));
+            fitAddon.fit();
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                fitAddon.fit();
+                invoke('resize_terminal', {
+                    windowLabel: windowLabel,
+                    rows: term.rows,
+                    cols: term.cols
+                }).catch(console.error);
+            });
+
+            // Send initial size
+            setTimeout(() => {
+                invoke('resize_terminal', {
+                    windowLabel: windowLabel,
+                    rows: term.rows,
+                    cols: term.cols
+                }).catch(console.error);
+            }, 100);
+
+            // Listen for output
+            listen('terminal-output', (event) => {
+                term.write(event.payload);
+            });
+
+            // Send input
+            term.onData((data) => {
+                invoke('send_terminal_input', {
+                    windowLabel: windowLabel,
+                    data: data
+                }).catch(console.error);
+            });
+
+            term.focus();
+        }
+    </script>
+</body>
+</html>
+

@@ -242,7 +242,8 @@ pub fn open_settings_window(app_handle: AppHandle) -> Result<(), String> {
         WebviewUrl::App("settings.html".into())
     )
     .title("Settings")
-    .inner_size(540.0, 680.0)
+    // Sized to fit redesigned rows without extra whitespace
+    .inner_size(600.0, 340.0)
     .resizable(false)
     .center()
     .always_on_top(true)

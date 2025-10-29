@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        html {
+            background: #1e1e1e !important; /* Solid background for modal windows */
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-primary) !important;
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .app-form-container {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 28px 28px 24px 28px;
+        }
+        h2 {
+            margin-top: 0;
+            margin-bottom: 24px;
+            font-size: 24px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+        }
+        .input-with-button {
+            display: flex;
+            gap: 8px;
+        }
+        .input-with-button input {
+            flex: 1;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1677ff;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .btn-record {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #6c757d;
+            color: white;
+            white-space: nowrap;
+        }
+        .btn-record:hover {
+            background: #5a6268;
+        }
+        .btn-record.recording {
+            background: #dc3545;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+        #icon-preview {
+            margin-top: 8px;
+        }
+        #icon-preview img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-form-container">
+        <h2 id="form-title">Add Application</h2>
+        
+        <div class="form-group">
+            <label>Type</label>
+            <select id="app-type">
+                <option value="app">Application</option>
+                <option value="webapp">Web Application</option>
+                <option value="tui">Terminal Application</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="app-name" placeholder="Application name">
+        </div>
+        
+        <div class="form-group" id="url-group" style="display: none;">
+            <label>URL</label>
+            <input type="text" id="app-url" placeholder="https://example.com">
+        </div>
+        
+        <div class="form-group" id="binary-group">
+            <label>Binary Path</label>
+            <div class="input-with-button">
+                <input type="text" id="app-binary" placeholder="/path/to/binary">
+                <button class="btn btn-primary" id="browse-binary-btn">Browse</button>
+            </div>
+        </div>
+        
+        <div class="form-group" id="params-group">
+            <label>Command Line Parameters</label>
+            <input type="text" id="app-params" placeholder="--flag value">
+        </div>
+        
+        <div class="form-group">
+            <label>Icon</label>
+            <button class="btn btn-primary" id="browse-icon-btn">Choose Icon</button>
+            <div id="icon-preview"></div>
+        </div>
+        
+        <div class="form-group">
+            <label>Keyboard Shortcut</label>
+            <div class="input-with-button">
+                <input type="text" id="app-shortcut" placeholder="CommandOrControl+1" readonly>
+                <button type="button" class="btn-record" id="record-app-shortcut-btn">Record</button>
+            </div>
+        </div>
+        
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="cancel-app-btn">Cancel</button>
+            <button class="btn btn-success" id="save-app-btn">Save</button>
+        </div>
+    </div>
+
+    <script src="app-form.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Launcher</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body style="background: transparent;">
+    <div class="app-container">
+        <!-- App grid -->
+        <div class="grid-container">
+            <div class="app-grid" id="app-grid" tabindex="0"></div>
+        </div>
+
+        <!-- Floating action buttons (macOS-style corners) -->
+        <button class="floating-button add-button fab-left no-drag" id="add-btn" title="Add Application">+</button>
+        <button class="floating-button settings-button fab-right no-drag" id="settings-btn" title="Settings">⚙️</button>
+    </div>
+
+    <!-- Modals will be inserted here -->
+    <div id="modals"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+

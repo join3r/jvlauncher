@@ -1,0 +1,907 @@
+html, body {
+    background: transparent !important; /* required for fully transparent window */
+    margin: 0;
+    padding: 0;
+}
+
+/* ============================================
+   CSS Variables for theming
+   ============================================ */
+
+/* Default theme (Material Design for Windows/Linux) */
+:root {
+    --accent: #2196f3; /* Material blue */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f5;
+    --bg-tertiary: #e0e0e0;
+    --text-primary: #212121;
+    --text-secondary: #757575;
+    --shortcut-color: var(--text-secondary);
+    --shortcut-bg: var(--bg-tertiary);
+    --border-color: rgba(0, 0, 0, 0.12);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
+    --blur-amount: 0px;
+}
+
+/* macOS Liquid Glass Theme - Light Mode */
+:root.platform-macos {
+    --accent: #007aff; /* macOS system blue */
+    --bg-primary: rgba(255, 255, 255, 0.50);
+    --bg-secondary: rgba(255, 255, 255, 0.60);
+    --bg-tertiary: rgba(255, 255, 255, 0.40);
+    --text-primary: #1d1d1f;
+    --text-secondary: #6e6e73;
+    --shortcut-color: rgba(0, 0, 0, 0.45);
+    --shortcut-bg: transparent;
+    --border-color: rgba(0, 0, 0, 0.04);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.18);
+    --blur-amount: 60px;
+}
+
+/* macOS Liquid Glass Theme - Dark Mode */
+:root.platform-macos[data-theme="dark"] {
+    --accent: #0a84ff;
+    /* Slightly lighter glass to better match macOS and increase contrast */
+    --bg-primary: rgba(36, 36, 38, 0.60);
+    --bg-secondary: rgba(46, 46, 50, 0.70);
+    --bg-tertiary: rgba(30, 30, 34, 0.55);
+    --text-primary: #f5f5f7;
+    --text-secondary: #c7c7cb;
+    --shortcut-color: rgba(255, 255, 255, 0.78);
+    --shortcut-bg: rgba(255, 255, 255, 0.10);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+    --blur-amount: 60px;
+}
+
+/* macOS System Theme - Dark Mode */
+@media (prefers-color-scheme: dark) {
+    :root.platform-macos:not([data-theme]) {
+        --accent: #0a84ff;
+        --bg-primary: rgba(36, 36, 38, 0.60);
+        --bg-secondary: rgba(46, 46, 50, 0.70);
+        --bg-tertiary: rgba(30, 30, 34, 0.55);
+        --text-primary: #f5f5f7;
+        --text-secondary: #c7c7cb;
+        --shortcut-color: rgba(255, 255, 255, 0.78);
+        --shortcut-bg: rgba(255, 255, 255, 0.10);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+        --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+        --blur-amount: 60px;
+    }
+}
+
+/* Material Design - Light Theme (Windows/Linux) */
+:root.platform-other[data-theme="light"] {
+    --accent: #2196f3;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f5;
+    --bg-tertiary: #e0e0e0;
+    --text-primary: #212121;
+    --text-secondary: #757575;
+    --border-color: rgba(0, 0, 0, 0.12);
+}
+
+/* Material Design - Dark Theme (Windows/Linux) */
+:root.platform-other[data-theme="dark"] {
+    --accent: #2196f3;
+    --bg-primary: #1e1e1e;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #3d3d3d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #9e9e9e;
+    --border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Material Design - System Dark Theme (Windows/Linux) */
+@media (prefers-color-scheme: dark) {
+    :root.platform-other:not([data-theme]) {
+        --accent: #2196f3;
+        --bg-primary: #1e1e1e;
+        --bg-secondary: #2d2d2d;
+        --bg-tertiary: #3d3d3d;
+        --text-primary: #e0e0e0;
+        --text-secondary: #9e9e9e;
+        --border-color: rgba(255, 255, 255, 0.12);
+    }
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: transparent !important; /* ensure no white flash */
+    color: var(--text-primary);
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+.drag-region { -webkit-app-region: drag; }
+.no-drag { -webkit-app-region: no-drag; }
+
+.app-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    position: relative;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* macOS Liquid Glass Effect */
+.platform-macos .app-container {
+    background: var(--bg-primary);
+    border: none; /* Remove border for cleaner look */
+    border-radius: 22px;
+    -webkit-backdrop-filter: saturate(180%) blur(var(--blur-amount));
+    backdrop-filter: saturate(180%) blur(var(--blur-amount));
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.18) inset,
+        0 0 0 1px rgba(0, 0, 0, 0.1),
+        0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+/* Material Design - No blur for Windows/Linux */
+.platform-other .app-container {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+}
+
+/* Floating action buttons - base */
+.floating-buttons { /* legacy wrapper (unused after macOS-style layout) */
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+}
+
+.floating-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 300;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* macOS Native Floating Buttons - Circular and Larger */
+.platform-macos .floating-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.12),
+        0 0 0 0.5px rgba(255, 255, 255, 0.5) inset;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 20px;
+}
+
+.fab-left {
+    position: absolute;
+    left: 18px;
+    bottom: 18px;
+}
+
+.fab-right {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+}
+
+.platform-macos .floating-button:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: scale(1.05);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 0 0 0.5px rgba(255, 255, 255, 0.6) inset;
+}
+
+.platform-macos .floating-button:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.75);
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Material Design Floating Buttons (Windows/Linux) */
+.platform-other .floating-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    font-size: 20px;
+}
+
+.platform-other .floating-button:hover {
+    background: var(--bg-tertiary);
+    transform: scale(1.05);
+}
+
+.platform-other .floating-button:active {
+    transform: scale(1.0);
+}
+
+.grid-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* macOS Native Grid Container - More Generous Padding */
+.platform-macos .grid-container {
+    padding: 28px;
+}
+
+.app-grid {
+    display: grid;
+    gap: 12px;
+    max-width: 100%;
+    width: 100%;
+    outline: none;
+    box-sizing: border-box;
+}
+
+/* macOS Native Grid Spacing - More Generous Gap */
+.platform-macos .app-grid {
+    gap: 18px;
+}
+
+.icon-item {
+    position: relative;
+    cursor: pointer;
+    text-align: center;
+    padding: 10px;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* macOS Native Icon Items - Transparent Cards */
+.platform-macos .icon-item {
+    background: transparent;
+    border-radius: 16px;
+    border: none;
+    padding: 14px;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+}
+
+.platform-macos .icon-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.platform-macos .icon-item.selected {
+    background: rgba(0, 122, 255, 0.12);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+    transform: scale(1.0);
+}
+
+/* Material Design Icon Items (Windows/Linux) */
+.platform-other .icon-item {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+
+.platform-other .icon-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.platform-other .icon-item.selected {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.icon-item .icon-image {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    margin: 0 auto 10px;
+    display: block;
+}
+
+/* macOS Native Icon Image - White Rounded Background */
+.platform-macos .icon-item .icon-image {
+    width: 64px;
+    height: 64px;
+    background: white;
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.1),
+        0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    margin: 0 auto 8px;
+}
+
+.icon-item .icon-placeholder {
+    width: 52px;
+    height: 52px;
+    background: var(--bg-tertiary, #e0e0e0);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    color: var(--text-secondary, #666);
+    font-size: 24px;
+    font-weight: 600;
+}
+
+/* macOS Native Icon Placeholder - White Rounded Background */
+.platform-macos .icon-item .icon-placeholder {
+    width: 64px;
+    height: 64px;
+    background: white;
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.1),
+        0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    margin: 0 auto 8px;
+    color: rgba(0, 122, 255, 0.8);
+    font-weight: 500;
+    font-size: 28px;
+}
+
+/* Material Design Icon Placeholder (Windows/Linux) */
+.platform-other .icon-item .icon-placeholder {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+}
+
+.icon-item .app-name {
+    font-weight: 500;
+    font-size: 12px;
+    margin-bottom: 2px;
+    margin-top: 6px;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+/* macOS Native App Name - Larger and Bolder */
+.platform-macos .icon-item .app-name {
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: -0.02em;
+    margin-top: 6px;
+}
+
+.icon-item .app-shortcut {
+    font-size: 10px;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 3px;
+    display: inline-block;
+    font-weight: 400;
+}
+
+/* macOS Native Shortcut - No Background, Lighter Color */
+.platform-macos .icon-item .app-shortcut {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--shortcut-bg);
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--shortcut-color);
+    margin-top: 2px;
+}
+
+/* Add button specific styling */
+.add-button {
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.75)) !important;
+    color: var(--text-primary, #1d1d1f) !important;
+    border: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.1)) !important;
+    font-size: 20px;
+    font-weight: 300;
+}
+
+/* macOS Native Add Button - Bright Blue */
+.platform-macos .add-button {
+    background: #007aff !important;
+    border: none !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow:
+        0 2px 8px rgba(0, 122, 255, 0.3),
+        0 0 0 0.5px rgba(255, 255, 255, 0.2) inset;
+    color: white !important;
+}
+
+.platform-macos .add-button:hover {
+    background: #0051d5 !important;
+    transform: scale(1.05);
+    box-shadow:
+        0 4px 12px rgba(0, 122, 255, 0.4),
+        0 0 0 0.5px rgba(255, 255, 255, 0.3) inset;
+}
+
+.platform-macos .add-button:active {
+    transform: scale(0.95);
+    background: #0040a8 !important;
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Material Design Add Button */
+.platform-other .add-button {
+    background: var(--accent) !important;
+    color: white !important;
+}
+
+.platform-other .add-button:hover {
+    background: #1677ff !important;
+}
+
+.platform-other .add-button:active {
+    background: #0869ea !important;
+}
+
+/* Context Menu */
+.context-menu {
+    position: fixed;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 8px 0;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    min-width: 120px;
+}
+
+/* macOS Liquid Glass Context Menu */
+.platform-macos .context-menu {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    -webkit-backdrop-filter: saturate(180%) blur(40px);
+    backdrop-filter: saturate(180%) blur(40px);
+    box-shadow:
+        0 0 0 0.5px rgba(255, 255, 255, 0.1) inset,
+        0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.context-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px 14px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 13px;
+    color: var(--text-primary);
+    transition: background 0.15s;
+}
+
+/* macOS Native Context Menu Buttons */
+.platform-macos .context-menu button {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.context-menu button:hover {
+    background: var(--bg-tertiary);
+}
+
+.platform-macos .context-menu button:hover {
+    background: rgba(0, 122, 255, 0.1);
+}
+
+.context-menu button.danger {
+    color: #dc3545;
+}
+
+.platform-macos .context-menu button.danger {
+    color: #ff3b30;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease;
+}
+
+/* macOS Native Modal Overlay */
+.platform-macos .modal-overlay {
+    background: rgba(0, 0, 0, 0.25);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    max-width: 520px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease;
+    box-shadow: var(--shadow-lg);
+}
+
+/* macOS Native Modal Content */
+.platform-macos .modal-content {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 14px;
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    -webkit-backdrop-filter: saturate(180%) blur(60px);
+    backdrop-filter: saturate(180%) blur(60px);
+    box-shadow:
+        0 0 0 0.5px rgba(255, 255, 255, 0.1) inset,
+        0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* macOS Native Modal Title */
+.platform-macos .modal-content h2 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+/* macOS Native Form Group */
+.platform-macos .form-group {
+    margin-bottom: 14px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+/* macOS Native Label */
+.platform-macos .form-group label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+/* macOS Native Form Inputs */
+.platform-macos .form-group input,
+.platform-macos .form-group select {
+    background: rgba(255, 255, 255, 0.5);
+    border: 0.5px solid rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* macOS Native Focus State */
+.platform-macos .form-group input:focus,
+.platform-macos .form-group select:focus {
+    border-color: var(--accent);
+    box-shadow:
+        0 0 0 3px rgba(0, 122, 255, 0.15),
+        0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.form-group input[readonly] {
+    background: var(--bg-tertiary);
+    cursor: default;
+    opacity: 0.9;
+}
+
+.form-group input[readonly]:focus {
+    border-color: var(--border-color);
+    box-shadow: none;
+}
+
+.form-group .input-with-button {
+    display: flex;
+    gap: 8px;
+}
+
+.form-group .input-with-button input {
+    flex: 1;
+}
+
+.btn-record {
+    padding: 6px 14px;
+    border: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.75));
+    color: var(--text-primary, #1d1d1f);
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.platform-macos .btn-record:hover {
+    background: var(--bg-tertiary, rgba(255, 255, 255, 0.85));
+    border-color: var(--border-color, rgba(0, 0, 0, 0.15));
+}
+
+.platform-other .btn-record {
+    background: #6c757d;
+    color: white;
+    border: none;
+}
+
+.platform-other .btn-record:hover {
+    background: #5a6268;
+}
+
+.btn-record.recording {
+    background: #ff3b30;
+    color: white;
+    border-color: #ff3b30;
+    animation: pulse 1s infinite;
+}
+
+.platform-other .btn-record.recording {
+    background: #dc3545;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.btn {
+    padding: 6px 16px;
+    border: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* macOS Native Button Styles */
+.platform-macos .btn-primary {
+    background: var(--accent, #007aff);
+    color: white;
+    border: 0.5px solid var(--accent, #007aff);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 122, 255, 0.3);
+}
+
+.platform-macos .btn-primary:hover {
+    background: #0051d5;
+    border-color: #0051d5;
+    box-shadow: 0 2px 6px rgba(0, 122, 255, 0.4);
+}
+
+.platform-macos .btn-success {
+    background: var(--accent, #007aff);
+    color: white;
+    border: 0.5px solid var(--accent, #007aff);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 122, 255, 0.3);
+}
+
+.platform-macos .btn-success:hover {
+    background: #0051d5;
+    border-color: #0051d5;
+    box-shadow: 0 2px 6px rgba(0, 122, 255, 0.4);
+}
+
+.platform-macos .btn-secondary {
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.75));
+    color: var(--text-primary, #1d1d1f);
+    border: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.1));
+}
+
+.platform-macos .btn-secondary:hover {
+    background: var(--bg-tertiary, rgba(255, 255, 255, 0.85));
+    border-color: var(--border-color, rgba(0, 0, 0, 0.15));
+}
+
+.platform-macos .btn-danger {
+    background: #ff3b30;
+    color: white;
+    border: 0.5px solid #ff3b30;
+    font-weight: 500;
+}
+
+.platform-macos .btn-danger:hover {
+    background: #d32f2f;
+    border-color: #d32f2f;
+}
+
+/* Material Design Button Styles (Windows/Linux) */
+.platform-other .btn-primary {
+    background: var(--accent);
+    color: white;
+}
+
+.platform-other .btn-primary:hover {
+    background: #1677ff;
+}
+
+.platform-other .btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.platform-other .btn-success:hover {
+    background: #218838;
+}
+
+.platform-other .btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.platform-other .btn-secondary:hover {
+    background: #5a6268;
+}
+
+.platform-other .btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.platform-other .btn-danger:hover {
+    background: #c82333;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+/* macOS Native Modal Actions */
+.platform-macos .modal-actions {
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.checkbox-label input {
+    margin-right: 8px;
+    width: auto;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dark theme styles are now handled by CSS variables above */
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+@media (prefers-color-scheme: dark) {
+    ::-webkit-scrollbar-track {
+        background: #2d2d2d;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #555;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #666;
+    }
+}
+

@@ -50,8 +50,7 @@ cargo tauri build
 ### Running in Development
 
 ```bash
-cd src-tauri
-cargo tauri dev
+./dev.sh
 ```
 
 ## Usage
