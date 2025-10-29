@@ -462,6 +462,15 @@ function setupEventListeners() {
             return;
         }
 
+        // Handle Command+W (macOS) or Ctrl+W (Windows/Linux) to hide window
+        // This is the standard close window shortcut
+        if ((e.key === 'w' || e.key === 'W') && (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey) {
+            e.preventDefault();
+            console.log('Close window shortcut pressed (Command/Ctrl+W), hiding window');
+            hideWindow();
+            return;
+        }
+
         // Check if pressed keys match any app shortcut
         const pressedShortcut = formatShortcut(e);
         if (pressedShortcut) {

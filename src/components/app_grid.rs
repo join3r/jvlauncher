@@ -26,7 +26,7 @@ pub fn AppGrid() -> Element {
         let mut state_write = state.write();
         let grid_size = state_write.settings.grid_size as usize;
         let total_apps = state_write.apps.len();
-        
+
         if total_apps == 0 {
             return;
         }
