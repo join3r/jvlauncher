@@ -91,7 +91,7 @@ async function detectPlatform() {
 // State
 let apps = [];
 let settings = { grid_cols: 4, grid_rows: 3, theme: 'system', global_shortcut: 'CommandOrControl+Shift+Space', start_at_login: false };
-let selectedIndex = 0;
+let selectedIndex = null; // Start with no selection - highlight only appears after arrow/enter key press
 
 // Shortcut recording state
 let isRecording = false;
@@ -252,6 +252,7 @@ async function init() {
             // Listen for window focus to reload apps and settings
             tauri.event.listen('tauri://focus', async () => {
                 console.log('Window focused, reloading data...');
+                selectedIndex = null; // Reset selection when window is focused
                 await loadSettings(); // This will also resize the window
                 await loadApps();
                 applyTheme();
@@ -498,33 +499,59 @@ function setupEventListeners() {
 // Handle keyboard navigation
 function handleKeyDown(e) {
     if (apps.length === 0) return;
-    
+
     const gridCols = settings.grid_cols;  // Use columns for horizontal navigation
     const totalApps = apps.length;
-    
+
     switch (e.key) {
         case 'ArrowRight':
             e.preventDefault();
-            selectedIndex = (selectedIndex + 1) % totalApps;
+            // Initialize selection on first arrow key press
+            if (selectedIndex === null) {
+                selectedIndex = 0;
+            } else {
+                selectedIndex = (selectedIndex + 1) % totalApps;
+            }
             renderApps();
             break;
         case 'ArrowLeft':
             e.preventDefault();
-            selectedIndex = selectedIndex === 0 ? totalApps - 1 : selectedIndex - 1;
+            // Initialize selection on first arrow key press
+            if (selectedIndex === null) {
+                selectedIndex = 0;
+            } else {
+                selectedIndex = selectedIndex === 0 ? totalApps - 1 : selectedIndex - 1;
+            }
             renderApps();
             break;
         case 'ArrowDown':
             e.preventDefault();
-            selectedIndex = Math.min(selectedIndex + gridCols, totalApps - 1);
+            // Initialize selection on first arrow key press
+            if (selectedIndex === null) {
+                selectedIndex = 0;
+            } else {
+                selectedIndex = Math.min(selectedIndex + gridCols, totalApps - 1);
+            }
             renderApps();
             break;
         case 'ArrowUp':
             e.preventDefault();
-            selectedIndex = Math.max(selectedIndex - gridCols, 0);
+            // Initialize selection on first arrow key press
+            if (selectedIndex === null) {
+                selectedIndex = 0;
+            } else {
+                selectedIndex = Math.max(selectedIndex - gridCols, 0);
+            }
             renderApps();
             break;
         case 'Enter':
             e.preventDefault();
+            // If no selection, select first app and launch it
+            if (selectedIndex === null) {
+                selectedIndex = 0;
+                renderApps();
+            }
+            // Launch the selected app
             if (apps[selectedIndex]) {
                 launchApp(apps[selectedIndex].id);
             }

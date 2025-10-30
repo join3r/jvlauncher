@@ -199,14 +199,14 @@ body {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.85);
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.65);
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
     -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
     box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.12),
-        0 0 0 0.5px rgba(255, 255, 255, 0.5) inset;
-    color: rgba(0, 0, 0, 0.6);
+        0 2px 8px rgba(0, 0, 0, 0.08),
+        0 0 0 0.5px rgba(255, 255, 255, 0.3) inset;
+    color: rgba(0, 0, 0, 0.5);
     font-size: 20px;
 }
 
@@ -223,16 +223,16 @@ body {
 }
 
 .platform-macos .floating-button:hover {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.80);
     transform: scale(1.05);
     box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.15),
-        0 0 0 0.5px rgba(255, 255, 255, 0.6) inset;
+        0 4px 12px rgba(0, 0, 0, 0.12),
+        0 0 0 0.5px rgba(255, 255, 255, 0.4) inset;
 }
 
 .platform-macos .floating-button:active {
     transform: scale(0.95);
-    background: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.55);
     transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
