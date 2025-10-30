@@ -150,10 +150,14 @@ let currentRecordingButton = null;
 
 // Icon state
 let iconPath = null;
+let userSelectedIcon = false; // Track if user manually selected an icon
 
 // App data (for edit mode)
 let appData = null;
 let isEditMode = false;
+
+// Debounce timer for URL input
+let urlDebounceTimer = null;
 
 // Format keyboard shortcut from event
 function formatShortcut(event) {
@@ -256,6 +260,47 @@ function updateIconPreview() {
     }
 }
 
+// Fetch web icon from URL
+async function fetchWebIcon(url) {
+    // Only fetch if user hasn't manually selected an icon
+    if (userSelectedIcon) {
+        console.log('[AppForm] User has selected a custom icon, skipping auto-fetch');
+        return;
+    }
+
+    // Validate URL format
+    if (!url || !url.trim()) {
+        return;
+    }
+
+    // Basic URL validation
+    try {
+        new URL(url);
+    } catch (e) {
+        console.log('[AppForm] Invalid URL format, skipping icon fetch:', url);
+        return;
+    }
+
+    console.log('[AppForm] Fetching web icon for URL:', url);
+
+    try {
+        const appName = document.getElementById('app-name').value.trim() || 'webapp';
+        const fetchedIconPath = await invoke('fetch_web_icon', {
+            url: url,
+            appName: appName
+        });
+
+        if (fetchedIconPath) {
+            console.log('[AppForm] Successfully fetched web icon:', fetchedIconPath);
+            iconPath = fetchedIconPath;
+            updateIconPreview();
+        }
+    } catch (error) {
+        console.log('[AppForm] Failed to fetch web icon:', error);
+        // Don't show error to user - it's an automatic feature
+    }
+}
+
 // Update field visibility based on app type
 function updateFieldsVisibility() {
     const type = getTypeFromSegment();
@@ -290,6 +335,10 @@ async function loadAppData() {
                 document.getElementById('app-params').value = appData.cli_params || '';
                 document.getElementById('app-shortcut').value = appData.shortcut || '';
                 iconPath = appData.icon_path || null;
+                // If app already has an icon, treat it as user-selected to prevent overwriting
+                if (iconPath) {
+                    userSelectedIcon = true;
+                }
                 updateIconPreview();
                 updateFieldsVisibility();
             }
@@ -430,6 +479,30 @@ async function init() {
             }
         });
 
+        // URL input change handler - auto-fetch icon for webapps
+        const urlInput = document.getElementById('app-url');
+        if (urlInput) {
+            urlInput.addEventListener('input', (e) => {
+                const url = e.target.value.trim();
+
+                // Clear existing debounce timer
+                if (urlDebounceTimer) {
+                    clearTimeout(urlDebounceTimer);
+                }
+
+                // Only fetch if we're in webapp mode
+                const appType = getTypeFromSegment();
+                if (appType !== 'webapp') {
+                    return;
+                }
+
+                // Debounce the fetch to avoid excessive requests
+                urlDebounceTimer = setTimeout(() => {
+                    fetchWebIcon(url);
+                }, 1000); // Wait 1 second after user stops typing
+            });
+        }
+
         // Browse icon button
         document.getElementById('browse-icon-btn').addEventListener('click', async () => {
             try {
@@ -447,6 +520,7 @@ async function init() {
                         sourcePath: selected,
                         appName: appName
                     });
+                    userSelectedIcon = true; // Mark that user manually selected an icon
                     updateIconPreview();
                 }
             } catch (error) {

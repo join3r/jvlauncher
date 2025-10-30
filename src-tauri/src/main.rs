@@ -4,6 +4,7 @@
 mod commands;
 mod database;
 mod icon_extractor;
+mod icon_fetcher;
 mod launcher;
 mod shortcut_manager;
 mod terminal;
@@ -171,6 +172,7 @@ fn main() {
             commands::launch,
             commands::extract_icon_from_binary,
             commands::save_icon_from_file,
+            commands::fetch_web_icon,
             commands::get_settings,
             commands::update_setting,
             commands::update_global_shortcut,

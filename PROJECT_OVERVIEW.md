@@ -44,7 +44,7 @@ App Launcher is a cross-platform application launcher inspired by tools like Alf
 **Drag & Drop**
 - Reorder apps easily
 - Visual feedback during drag
-- Auto-saves new positions
+- Auto-saves new positionsk
 
 ### 4. Customization
 

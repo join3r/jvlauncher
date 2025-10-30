@@ -39,6 +39,15 @@ image = "0.24"
 # Terminal emulator
 portable-pty = "0.8"
 
+# HTTP client for fetching web icons
+reqwest = { version = "0.11", features = ["blocking"] }
+
+# HTML parsing for extracting icon URLs
+scraper = "0.17"
+
+# URL parsing
+url = "2.5"
+
 # Utilities
 anyhow = "1.0"
 thiserror = "1.0"

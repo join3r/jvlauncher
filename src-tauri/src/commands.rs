@@ -1,5 +1,5 @@
 use crate::database::{App, DbPool, NewApp, Settings};
-use crate::{database, icon_extractor, launcher, terminal};
+use crate::{database, icon_extractor, icon_fetcher, launcher, terminal};
 use tauri::{AppHandle, Manager, State};
 
 /// Get all apps from the database
@@ -107,13 +107,31 @@ pub fn save_icon_from_file(
 ) -> Result<String, String> {
     let app_data = app_handle.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-    
+
     let icons_dir = app_data.join("icons");
     icon_extractor::ensure_icons_dir(&icons_dir)
         .map_err(|e| format!("Failed to create icons directory: {}", e))?;
 
     icon_extractor::save_icon_from_file(&source_path, &icons_dir, &app_name)
         .map_err(|e| format!("Failed to save icon: {}", e))
+}
+
+/// Fetch and save a web application's icon from its URL
+#[tauri::command]
+pub fn fetch_web_icon(
+    app_handle: AppHandle,
+    url: String,
+    app_name: String,
+) -> Result<String, String> {
+    let app_data = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    let icons_dir = app_data.join("icons");
+    icon_extractor::ensure_icons_dir(&icons_dir)
+        .map_err(|e| format!("Failed to create icons directory: {}", e))?;
+
+    icon_fetcher::fetch_web_icon(&url, &icons_dir, &app_name)
+        .map_err(|e| format!("Failed to fetch web icon: {}", e))
 }
 
 /// Get application settings
