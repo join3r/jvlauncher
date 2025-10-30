@@ -239,3 +239,200 @@ pub fn ensure_icons_dir(icons_dir: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Save an icon from the clipboard
+pub fn save_icon_from_clipboard(icons_dir: &Path, app_name: &str) -> Result<String> {
+    #[cfg(target_os = "macos")]
+    {
+        save_icon_from_clipboard_macos(icons_dir, app_name)
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        save_icon_from_clipboard_windows(icons_dir, app_name)
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        save_icon_from_clipboard_linux(icons_dir, app_name)
+    }
+}
+
+/// macOS: Save icon from clipboard
+#[cfg(target_os = "macos")]
+fn save_icon_from_clipboard_macos(icons_dir: &Path, app_name: &str) -> Result<String> {
+    use std::fs;
+    use std::process::Command;
+
+    // Create a temporary file to store the image
+    let temp_dir = std::env::temp_dir();
+    let temp_path = temp_dir.join(format!("clipboard_icon_{}.png", uuid::Uuid::new_v4()));
+
+    // Use osascript to get clipboard image data
+    // This AppleScript gets the clipboard as TIFF data and writes it to a file
+    let applescript = format!(
+        r#"
+        set theFile to POSIX file "{}"
+        try
+            set theImage to the clipboard as «class PNGf»
+            set fileRef to open for access theFile with write permission
+            write theImage to fileRef
+            close access fileRef
+            return "success"
+        on error errMsg
+            try
+                close access theFile
+            end try
+            error "No image in clipboard: " & errMsg
+        end try
+        "#,
+        temp_path.to_string_lossy()
+    );
+
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(&applescript)
+        .output()
+        .map_err(|e| anyhow!("Failed to execute osascript: {}", e))?;
+
+    if !output.status.success() {
+        let error_msg = String::from_utf8_lossy(&output.stderr);
+
+        // Try alternative method using TIFF format
+        let applescript_tiff = format!(
+            r#"
+            set theFile to POSIX file "{}"
+            try
+                set theImage to the clipboard as «class TIFFf»
+                set fileRef to open for access theFile with write permission
+                write theImage to fileRef
+                close access fileRef
+                return "success"
+            on error errMsg
+                try
+                    close access theFile
+                end try
+                error "No image in clipboard"
+            end try
+            "#,
+            temp_path.to_string_lossy()
+        );
+
+        let output_tiff = Command::new("osascript")
+            .arg("-e")
+            .arg(&applescript_tiff)
+            .output()
+            .map_err(|e| anyhow!("Failed to execute osascript: {}", e))?;
+
+        if !output_tiff.status.success() {
+            return Err(anyhow!("No image found in clipboard. Make sure you have copied an image (not a file path). Error: {}", error_msg));
+        }
+
+        // Convert TIFF to PNG using sips
+        if temp_path.exists() {
+            let png_path = temp_dir.join(format!("clipboard_icon_{}_converted.png", uuid::Uuid::new_v4()));
+            let convert_output = Command::new("sips")
+                .args(&["-s", "format", "png", temp_path.to_str().unwrap(), "--out", png_path.to_str().unwrap()])
+                .output()
+                .map_err(|e| anyhow!("Failed to convert TIFF to PNG: {}", e))?;
+
+            let _ = fs::remove_file(&temp_path);
+
+            if convert_output.status.success() && png_path.exists() {
+                let result = save_icon_from_file(png_path.to_str().unwrap(), icons_dir, app_name);
+                let _ = fs::remove_file(&png_path);
+                return result;
+            }
+        }
+
+        return Err(anyhow!("Failed to process clipboard image"));
+    }
+
+    // If we got PNG data directly, use it
+    if temp_path.exists() {
+        let result = save_icon_from_file(temp_path.to_str().unwrap(), icons_dir, app_name);
+        let _ = fs::remove_file(&temp_path);
+        return result;
+    }
+
+    Err(anyhow!("No image found in clipboard"))
+}
+
+/// Windows: Save icon from clipboard
+#[cfg(target_os = "windows")]
+fn save_icon_from_clipboard_windows(icons_dir: &Path, app_name: &str) -> Result<String> {
+    use std::fs;
+    use std::process::Command;
+
+    // Create a temporary file
+    let temp_dir = std::env::temp_dir();
+    let temp_path = temp_dir.join(format!("clipboard_icon_{}.png", uuid::Uuid::new_v4()));
+
+    // Use PowerShell to get clipboard image and save it
+    let ps_script = format!(
+        r#"
+$image = [System.Windows.Forms.Clipboard]::GetImage()
+if ($image -ne $null) {{
+    $image.Save('{}')
+    exit 0
+}} else {{
+    exit 1
+}}
+"#,
+        temp_path.to_string_lossy()
+    );
+
+    let output = Command::new("powershell")
+        .args(&["-NoProfile", "-Command", &ps_script])
+        .output()
+        .map_err(|e| anyhow!("Failed to read clipboard: {}", e))?;
+
+    if output.status.success() && temp_path.exists() {
+        let result = save_icon_from_file(temp_path.to_str().unwrap(), icons_dir, app_name);
+        let _ = fs::remove_file(&temp_path);
+        return result;
+    }
+
+    Err(anyhow!("No image found in clipboard"))
+}
+
+/// Linux: Save icon from clipboard
+#[cfg(target_os = "linux")]
+fn save_icon_from_clipboard_linux(icons_dir: &Path, app_name: &str) -> Result<String> {
+    use std::fs;
+    use std::process::Command;
+
+    // Create a temporary file
+    let temp_dir = std::env::temp_dir();
+    let temp_path = temp_dir.join(format!("clipboard_icon_{}.png", uuid::Uuid::new_v4()));
+
+    // Try xclip first
+    let output = Command::new("xclip")
+        .args(&["-selection", "clipboard", "-t", "image/png", "-o"])
+        .output();
+
+    if let Ok(output) = output {
+        if output.status.success() {
+            fs::write(&temp_path, output.stdout)?;
+            let result = save_icon_from_file(temp_path.to_str().unwrap(), icons_dir, app_name);
+            let _ = fs::remove_file(&temp_path);
+            return result;
+        }
+    }
+
+    // Try wl-paste (Wayland)
+    let output = Command::new("wl-paste")
+        .args(&["--type", "image/png"])
+        .output();
+
+    if let Ok(output) = output {
+        if output.status.success() {
+            fs::write(&temp_path, output.stdout)?;
+            let result = save_icon_from_file(temp_path.to_str().unwrap(), icons_dir, app_name);
+            let _ = fs::remove_file(&temp_path);
+            return result;
+        }
+    }
+
+    Err(anyhow!("No image found in clipboard (xclip or wl-paste required)"))
+}
+

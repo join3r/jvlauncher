@@ -704,7 +704,10 @@ function createModal(title, onSave, app = null) {
         
         <div class="form-group">
             <label>Icon</label>
-            <button class="btn btn-primary" id="browse-icon-btn">Choose Icon</button>
+            <div class="input-with-button">
+                <button class="btn btn-primary" id="browse-icon-btn">Choose Icon</button>
+                <button class="btn btn-primary" id="paste-icon-btn">Paste Icon</button>
+            </div>
             <div id="icon-preview" style="margin-top: 8px;"></div>
         </div>
         
@@ -794,7 +797,21 @@ function createModal(title, onSave, app = null) {
             console.error('Failed to save icon:', error);
         }
     });
-    
+
+    // Paste icon
+    content.querySelector('#paste-icon-btn').addEventListener('click', async () => {
+        try {
+            const appName = content.querySelector('#app-name').value || 'app';
+            iconPath = await invoke('paste_icon_from_clipboard', {
+                appName: appName
+            });
+            updateIconPreview();
+        } catch (error) {
+            console.error('Failed to paste icon from clipboard:', error);
+            alert('Failed to paste icon from clipboard. Make sure an image is in your clipboard.');
+        }
+    });
+
     // Cancel button
     content.querySelector('#cancel-app-btn').addEventListener('click', () => {
         stopRecording();

@@ -62,6 +62,28 @@ pub fn AddModal() -> Element {
         });
     };
 
+    let handle_paste_icon = move |_| {
+        spawn(async move {
+            match invoke_paste_icon_from_clipboard(name.read().clone()).await {
+                Ok(saved_path) => {
+                    icon_path.set(Some(saved_path));
+                }
+                Err(e) => {
+                    #[cfg(target_family = "wasm")]
+                    {
+                        use wasm_bindgen::prelude::*;
+                        #[wasm_bindgen]
+                        extern "C" {
+                            #[wasm_bindgen(js_namespace = ["window"])]
+                            fn alert(s: &str);
+                        }
+                        alert(&format!("Failed to paste icon from clipboard: {}", e));
+                    }
+                }
+            }
+        });
+    };
+
     rsx! {
         div {
             class: "modal-overlay",
@@ -164,10 +186,18 @@ pub fn AddModal() -> Element {
                 div {
                     style: "margin-bottom: 20px;",
                     label { style: "display: block; margin-bottom: 8px; font-weight: bold;", "Icon:" }
-                    button {
-                        onclick: handle_browse_icon,
-                        style: "padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;",
-                        "Choose Icon"
+                    div {
+                        style: "display: flex; gap: 8px;",
+                        button {
+                            onclick: handle_browse_icon,
+                            style: "padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;",
+                            "Choose Icon"
+                        }
+                        button {
+                            onclick: handle_paste_icon,
+                            style: "padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;",
+                            "Paste Icon"
+                        }
                     }
                     if let Some(icon) = icon_path.read().as_ref() {
                         div {
@@ -276,19 +306,37 @@ async fn invoke_extract_icon(binary_path: String) -> Result<String, String> {
 #[cfg(target_family = "wasm")]
 async fn invoke_save_icon_from_file(source_path: String, app_name: String) -> Result<String, String> {
     use wasm_bindgen::prelude::*;
-    
+
     #[wasm_bindgen]
     extern "C" {
         #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "core"])]
         async fn invoke(cmd: &str, args: JsValue) -> JsValue;
     }
-    
+
     let args = serde_wasm_bindgen::to_value(&serde_json::json!({
         "sourcePath": source_path,
         "appName": app_name
     })).map_err(|e| e.to_string())?;
-    
+
     let result = invoke("save_icon_from_file", args).await;
+    serde_wasm_bindgen::from_value(result).map_err(|e| e.to_string())
+}
+
+#[cfg(target_family = "wasm")]
+async fn invoke_paste_icon_from_clipboard(app_name: String) -> Result<String, String> {
+    use wasm_bindgen::prelude::*;
+
+    #[wasm_bindgen]
+    extern "C" {
+        #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "core"])]
+        async fn invoke(cmd: &str, args: JsValue) -> JsValue;
+    }
+
+    let args = serde_wasm_bindgen::to_value(&serde_json::json!({
+        "appName": app_name
+    })).map_err(|e| e.to_string())?;
+
+    let result = invoke("paste_icon_from_clipboard", args).await;
     serde_wasm_bindgen::from_value(result).map_err(|e| e.to_string())
 }
 

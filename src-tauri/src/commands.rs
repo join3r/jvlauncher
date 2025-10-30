@@ -134,6 +134,23 @@ pub fn fetch_web_icon(
         .map_err(|e| format!("Failed to fetch web icon: {}", e))
 }
 
+/// Save an icon from the clipboard
+#[tauri::command]
+pub fn paste_icon_from_clipboard(
+    app_handle: AppHandle,
+    app_name: String,
+) -> Result<String, String> {
+    let app_data = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    let icons_dir = app_data.join("icons");
+    icon_extractor::ensure_icons_dir(&icons_dir)
+        .map_err(|e| format!("Failed to create icons directory: {}", e))?;
+
+    icon_extractor::save_icon_from_clipboard(&icons_dir, &app_name)
+        .map_err(|e| format!("Failed to paste icon from clipboard: {}", e))
+}
+
 /// Get application settings
 #[tauri::command]
 pub fn get_settings(pool: State<DbPool>) -> Result<Settings, String> {
@@ -355,7 +372,7 @@ pub fn open_edit_app_window(app_handle: AppHandle, app_id: i64) -> Result<(), St
         WebviewUrl::App("app-form.html".into())
     )
     .title("Edit Application")
-    .inner_size(520.0, 560.0)
+    .inner_size(520.0, 620.0)
     .resizable(false)
     .center()
     .always_on_top(true)

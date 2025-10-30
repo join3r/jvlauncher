@@ -172,6 +172,7 @@ fn main() {
             commands::launch,
             commands::extract_icon_from_binary,
             commands::save_icon_from_file,
+            commands::paste_icon_from_clipboard,
             commands::fetch_web_icon,
             commands::get_settings,
             commands::update_setting,

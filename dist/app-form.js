@@ -444,8 +444,10 @@ async function init() {
         // Type segmented control
         const typeSegment = document.getElementById('type-segment');
         if (typeSegment) {
-            // Default selection
-            setTypeSegment('app');
+            // Default selection (only if not in edit mode)
+            if (!isEditMode) {
+                setTypeSegment('app');
+            }
             typeSegment.addEventListener('click', (e) => {
                 const target = e.target;
                 if (target && target.tagName === 'BUTTON' && target.dataset.value && !target.disabled) {
@@ -525,6 +527,21 @@ async function init() {
                 }
             } catch (error) {
                 console.error('[AppForm] Failed to open file dialog:', error);
+            }
+        });
+
+        // Paste icon button
+        document.getElementById('paste-icon-btn').addEventListener('click', async () => {
+            try {
+                const appName = document.getElementById('app-name').value.trim() || 'app';
+                iconPath = await invoke('paste_icon_from_clipboard', {
+                    appName: appName
+                });
+                userSelectedIcon = true; // Mark that user manually selected an icon
+                updateIconPreview();
+            } catch (error) {
+                console.error('[AppForm] Failed to paste icon from clipboard:', error);
+                alert('Failed to paste icon from clipboard. Make sure an image is in your clipboard.');
             }
         });
 
