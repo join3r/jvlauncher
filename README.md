@@ -55,7 +55,7 @@ cargo tauri build
 
 ## Usage
 
-1. **Show Launcher**: Press the global shortcut (default: Cmd/Ctrl+Space)
+1. **Show Launcher**: Press the global shortcut (default: Cmd/Ctrl+Shift+Space)
 2. **Add Application**: Click the + button in the bottom-right corner
 3. **Navigate**: Use arrow keys to move between apps
 4. **Launch**: Click an app or press Enter
@@ -128,7 +128,7 @@ Settings are stored in a SQLite database in your application data directory:
 cd src-tauri
 cargo tauri build
 
-# The installer will be in src-tauri/target/release/bundle/
+# The installer will be in target/release/bundle/
 ```
 
 ## Troubleshooting
@@ -153,18 +153,8 @@ cargo tauri build
 
 ## License
 
-[Your License Here]
+No idea
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues and pull requests.
-
-## Roadmap
-
-- [ ] Plugin system for custom launchers
-- [ ] Cloud sync for settings and apps
-- [ ] App usage statistics
-- [ ] Search functionality
-- [ ] Tags and categories
-- [ ] Import/export configuration
-
