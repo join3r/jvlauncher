@@ -199,6 +199,7 @@ pub fn hide_main_window(app_handle: AppHandle) -> Result<(), String> {
 /// This is the only way to actually quit the app since Cmd+Q is intercepted on macOS
 #[tauri::command]
 pub fn quit_app(app_handle: AppHandle) -> Result<(), String> {
+    println!("Exiting");
     app_handle.exit(0);
     Ok(())
 }
@@ -226,13 +227,9 @@ pub fn resize_main_window(app_handle: AppHandle, grid_cols: i32, grid_rows: i32)
     let width = (ITEM_WIDTH * grid_cols as f64) + (GRID_GAP * (grid_cols - 1) as f64) + PADDING_HORIZONTAL;
     let height = (ITEM_HEIGHT * grid_rows as f64) + (GRID_GAP * (grid_rows - 1) as f64) + PADDING_TOP + PADDING_BOTTOM + FLOATING_BUTTONS_HEIGHT;
 
-    println!("Calculated window size: {}x{} for grid {}x{}", width, height, grid_cols, grid_rows);
-
     // Apply min/max constraints
     let width = width.max(400.0).min(2000.0);
     let height = height.max(200.0).min(1400.0);
-
-    println!("After constraints: {}x{}", width, height);
 
     // Get main window and resize
     if let Some(window) = app_handle.get_webview_window("main") {

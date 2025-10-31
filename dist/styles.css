@@ -283,7 +283,7 @@ body {
 
 .icon-item {
     position: relative;
-    cursor: pointer;
+    cursor: grab;
     text-align: center;
     padding: 10px;
     border: 2px solid transparent;
@@ -292,6 +292,23 @@ body {
     background: var(--bg-secondary);
     color: var(--text-primary);
     box-shadow: var(--shadow-sm);
+}
+
+/* Drag state: item being dragged */
+.icon-item.dragging {
+    opacity: 0.5 !important;
+    cursor: grabbing !important;
+    transform: scale(0.95) !important;
+    z-index: 1000;
+}
+
+/* Drag over state: valid drop target */
+.icon-item.drag-over {
+    border-color: var(--accent) !important;
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary)) !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 0 0 2px var(--accent), var(--shadow-md) !important;
+    z-index: 999;
 }
 
 /* macOS Native Icon Items - Transparent Cards */
@@ -303,6 +320,26 @@ body {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     box-shadow: none;
+    cursor: grab;
+}
+
+/* macOS drag state */
+.platform-macos .icon-item.dragging {
+    opacity: 0.4 !important;
+    cursor: grabbing !important;
+    transform: scale(0.92) !important;
+    z-index: 1000;
+}
+
+/* macOS drag over state */
+.platform-macos .icon-item.drag-over {
+    background: rgba(0, 122, 255, 0.15) !important;
+    border: 2px solid rgba(0, 122, 255, 0.4) !important;
+    transform: translateY(-2px) scale(1.03) !important;
+    box-shadow: 
+        0 0 0 2px rgba(0, 122, 255, 0.2),
+        0 6px 16px rgba(0, 122, 255, 0.2) !important;
+    z-index: 999;
 }
 
 .platform-macos .icon-item:hover {
@@ -321,6 +358,24 @@ body {
 .platform-other .icon-item {
     background: var(--bg-secondary);
     border-radius: 8px;
+    cursor: grab;
+}
+
+/* Material Design drag state */
+.platform-other .icon-item.dragging {
+    opacity: 0.5 !important;
+    cursor: grabbing !important;
+    transform: scale(0.95) !important;
+    z-index: 1000;
+}
+
+/* Material Design drag over state */
+.platform-other .icon-item.drag-over {
+    border-color: var(--accent) !important;
+    background: color-mix(in srgb, var(--accent) 15%, var(--bg-secondary)) !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 0 0 2px var(--accent), var(--shadow-md) !important;
+    z-index: 999;
 }
 
 .platform-other .icon-item:hover {

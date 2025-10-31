@@ -92,6 +92,11 @@ async function detectPlatform() {
 let apps = [];
 let settings = { grid_cols: 4, grid_rows: 3, theme: 'system', global_shortcut: 'CommandOrControl+Shift+Space', start_at_login: false };
 let selectedIndex = null; // Start with no selection - highlight only appears after arrow/enter key press
+let isDragging = false; // Track if a drag operation is in progress
+let draggedIndex = null; // Track which item is being dragged
+let draggedElement = null; // Track the dragged DOM element
+let dragOverElement = null; // Track the element currently being dragged over
+let dragGhost = null; // Visual drag ghost element
 
 // Shortcut recording state
 let isRecording = false;
@@ -317,7 +322,8 @@ function renderApps() {
         item.className = 'icon-item';
         item.dataset.index = index;
         item.dataset.appId = app.id;
-        item.draggable = true;
+        // Don't use HTML5 draggable - we'll use custom mouse event drag instead
+        item.draggable = false;
         
         if (index === selectedIndex) {
             item.classList.add('selected');
@@ -329,11 +335,13 @@ function renderApps() {
             img.className = 'icon-image';
             img.src = toAssetUrl(app.icon_path);
             img.alt = app.name;
+            img.draggable = false; // Prevent image from interfering with drag
             item.appendChild(img);
         } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'icon-placeholder';
             placeholder.textContent = app.name.charAt(0).toUpperCase();
+            placeholder.draggable = false; // Prevent placeholder from interfering with drag
             item.appendChild(placeholder);
         }
         
@@ -341,6 +349,7 @@ function renderApps() {
         const name = document.createElement('div');
         name.className = 'app-name';
         name.textContent = app.name;
+        name.draggable = false; // Prevent text from interfering with drag
         item.appendChild(name);
         
         // Shortcut
@@ -348,17 +357,140 @@ function renderApps() {
             const shortcut = document.createElement('div');
             shortcut.className = 'app-shortcut';
             shortcut.textContent = app.shortcut;
+            shortcut.draggable = false; // Prevent shortcut from interfering with drag
             item.appendChild(shortcut);
         }
         
         // Event listeners
-        item.addEventListener('click', () => launchApp(app.id));
+        let wasDragging = false;
+        item.addEventListener('click', (e) => {
+            // Prevent launching if we just finished a drag operation
+            if (wasDragging || isDragging) {
+                wasDragging = false;
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            launchApp(app.id);
+        });
+        
+        // Track if drag happened to prevent click
+        const originalMouseDown = item.onmousedown;
+        item.addEventListener('mousedown', (e) => {
+            wasDragging = false;
+        });
         item.addEventListener('contextmenu', (e) => showContextMenu(e, app));
         
-        // Drag and drop
-        item.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', index));
-        item.addEventListener('dragover', (e) => e.preventDefault());
-        item.addEventListener('drop', (e) => handleDrop(e, index));
+        // Custom drag implementation using mouse events (more reliable than HTML5 drag in Tauri)
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let isMouseDown = false;
+        
+        item.addEventListener('mousedown', (e) => {
+            // Only start drag on left mouse button
+            if (e.button !== 0) return;
+            
+            // Don't start drag if clicking on a button or interactive element
+            if (e.target.closest('button') || e.target.closest('input')) return;
+            
+            isMouseDown = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            
+            // Small delay to distinguish between click and drag
+            const dragThreshold = 5; // pixels
+            
+            const handleMouseMove = (moveEvent) => {
+                if (!isMouseDown) return;
+                
+                const deltaX = Math.abs(moveEvent.clientX - dragStartX);
+                const deltaY = Math.abs(moveEvent.clientY - dragStartY);
+                
+                // Start drag if mouse moved beyond threshold
+                if (deltaX > dragThreshold || deltaY > dragThreshold) {
+                    if (!isDragging) {
+                        // Start drag
+                        isDragging = true;
+                        draggedIndex = index;
+                        draggedElement = item;
+                        wasDragging = true; // Mark that drag happened
+                        
+                        item.classList.add('dragging');
+                        moveEvent.preventDefault(); // Prevent text selection
+                        
+                        // Create drag ghost element
+                        createDragGhost(item, moveEvent);
+                        
+                        // Set up global mouse tracking
+                        setupCustomDragTracking(moveEvent);
+                    }
+                }
+            };
+            
+            const handleMouseUp = (upEvent) => {
+                isMouseDown = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+                
+                // If we were dragging, handle the drop
+                if (isDragging) {
+                    cleanupCustomDragTracking(upEvent);
+                }
+            };
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        });
+        
+        // Handle dragover - must use capture phase to catch events on child elements
+        // and ALWAYS preventDefault to allow drop events
+        item.addEventListener('dragover', (e) => {
+            // CRITICAL: Always prevent default to allow drop events to fire
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            // Only add drag-over visual feedback if not the dragging item itself
+            const currentIndex = parseInt(item.dataset.index);
+            if (draggedIndex !== null && draggedIndex !== currentIndex) {
+                // Remove drag-over from all items first
+                document.querySelectorAll('.icon-item').forEach(el => {
+                    const elIndex = parseInt(el.dataset.index);
+                    if (elIndex !== draggedIndex) {
+                        el.classList.remove('drag-over');
+                    }
+                });
+                // Add drag-over to current item
+                item.classList.add('drag-over');
+            }
+        }, true); // Capture phase to catch events on child elements
+        
+        item.addEventListener('dragleave', (e) => {
+            // Check if we're actually leaving this item (not just moving to a child)
+            const rect = item.getBoundingClientRect();
+            const x = e.clientX;
+            const y = e.clientY;
+            // Remove drag-over if mouse is outside the item bounds
+            if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                item.classList.remove('drag-over');
+            }
+        });
+        
+        // Handle drop - use capture phase to catch events on child elements
+        item.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Stop propagation to prevent grid handler from interfering
+            
+            // Remove drag-over from all items
+            document.querySelectorAll('.icon-item').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+            
+            // Only process drop if we have a valid drag
+            const currentIndex = parseInt(item.dataset.index);
+            if (draggedIndex !== null && draggedIndex !== currentIndex) {
+                handleDrop(e, currentIndex);
+            }
+        }, true); // Capture phase to catch events on child elements
         
         grid.appendChild(item);
     });
@@ -429,8 +561,44 @@ function setupEventListeners() {
     const appGrid = document.getElementById('app-grid');
     if (appGrid) {
         appGrid.addEventListener('keydown', handleKeyDown);
+        
+        // Prevent default drag behavior on grid to allow drops
+        // But don't stop propagation so items can also handle it
+        appGrid.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            // Don't stop propagation - let items handle it too
+        });
+        
+        // Handle drop on empty grid space - use capture phase to check first
+        // but don't prevent item drops from working
+        appGrid.addEventListener('drop', (e) => {
+            // Only handle if drop is directly on grid element itself, not on any child
+            const isDirectDropOnGrid = e.target === appGrid;
+            const isDropOnItem = e.target.closest('.icon-item') !== null;
+            
+            if (isDirectDropOnGrid && !isDropOnItem) {
+                e.preventDefault();
+                e.stopPropagation();
+                // If drop happens on grid but not on an item, drop at the end
+                if (draggedIndex !== null && draggedIndex < apps.length) {
+                    handleDrop(e, apps.length - 1);
+                }
+            }
+            // Otherwise let the item handle it - don't prevent propagation
+        }, false); // Use bubbling phase so items can handle first
+        
         console.log('Keyboard navigation listener attached');
     }
+    
+    // Prevent default drag behavior on document body to avoid browser's default drag image
+    document.body.addEventListener('dragover', (e) => {
+        // Allow dragover to propagate to icon-items and grid
+        if (e.target.closest('.icon-item') || e.target.closest('.app-grid')) {
+            return; // Let icon-items handle it
+        }
+        e.preventDefault();
+    });
     
     // Global keyboard listener for Escape, recording, and app shortcuts
     document.addEventListener('keydown', (e) => {
@@ -633,25 +801,184 @@ async function deleteApp(appId) {
     }
 }
 
+// Create drag ghost element that follows the cursor
+function createDragGhost(item, startEvent) {
+    // Clone the item for the ghost
+    dragGhost = item.cloneNode(true);
+    dragGhost.style.position = 'fixed';
+    dragGhost.style.pointerEvents = 'none';
+    dragGhost.style.opacity = '0.7';
+    dragGhost.style.zIndex = '10000';
+    dragGhost.style.transform = 'rotate(5deg)';
+    dragGhost.style.transition = 'none';
+    dragGhost.style.width = item.offsetWidth + 'px';
+    dragGhost.style.height = item.offsetHeight + 'px';
+    dragGhost.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.3)';
+    
+    // Position initially at mouse position
+    const rect = item.getBoundingClientRect();
+    dragGhost.style.left = (startEvent.clientX - rect.width / 2) + 'px';
+    dragGhost.style.top = (startEvent.clientY - rect.height / 2) + 'px';
+    
+    document.body.appendChild(dragGhost);
+}
+
+// Update drag ghost position
+function updateDragGhostPosition(e) {
+    if (dragGhost) {
+        dragGhost.style.left = (e.clientX - dragGhost.offsetWidth / 2) + 'px';
+        dragGhost.style.top = (e.clientY - dragGhost.offsetHeight / 2) + 'px';
+    }
+}
+
+// Remove drag ghost
+function removeDragGhost() {
+    if (dragGhost) {
+        if (document.body.contains(dragGhost)) {
+            document.body.removeChild(dragGhost);
+        }
+        dragGhost = null;
+    }
+}
+
+// Setup custom drag tracking using mouse events
+function setupCustomDragTracking(startEvent) {
+    const handleMouseMove = (e) => {
+        if (!isDragging || !draggedElement) return;
+        
+        // Prevent default to avoid text selection
+        e.preventDefault();
+        
+        // Update drag ghost position
+        updateDragGhostPosition(e);
+        
+        // Temporarily hide drag ghost to detect elements below it
+        const ghostWasVisible = dragGhost ? dragGhost.style.display !== 'none' : false;
+        if (dragGhost) {
+            dragGhost.style.display = 'none';
+        }
+        
+        // Find which icon-item the mouse is over
+        const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
+        const itemBelow = elementBelow ? elementBelow.closest('.icon-item') : null;
+        
+        // Restore drag ghost visibility
+        if (dragGhost && ghostWasVisible) {
+            dragGhost.style.display = '';
+        }
+        
+        if (itemBelow && itemBelow !== draggedElement) {
+            // Remove drag-over from all items
+            document.querySelectorAll('.icon-item').forEach(el => {
+                if (el !== draggedElement) {
+                    el.classList.remove('drag-over');
+                }
+            });
+            // Add drag-over to item below
+            itemBelow.classList.add('drag-over');
+            dragOverElement = itemBelow;
+        } else if (!itemBelow || itemBelow === draggedElement) {
+            // Remove drag-over if not over a valid item
+            document.querySelectorAll('.icon-item').forEach(el => {
+                if (el !== draggedElement) {
+                    el.classList.remove('drag-over');
+                }
+            });
+            dragOverElement = null;
+        }
+    };
+    
+    const handleMouseUp = (e) => {
+        if (!isDragging) return;
+        
+        e.preventDefault();
+        
+        // Temporarily hide drag ghost to detect elements below it
+        if (dragGhost) {
+            dragGhost.style.display = 'none';
+        }
+        
+        // Find which icon-item the mouse is over when released
+        const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
+        const itemBelow = elementBelow ? elementBelow.closest('.icon-item') : null;
+        
+        // Restore drag ghost (will be removed in cleanup anyway)
+        if (dragGhost) {
+            dragGhost.style.display = '';
+        }
+        
+        if (itemBelow && itemBelow !== draggedElement && draggedIndex !== null) {
+            const targetIndex = parseInt(itemBelow.dataset.index);
+            if (targetIndex !== draggedIndex) {
+                handleDrop(null, targetIndex);
+            }
+        }
+        
+        cleanupCustomDragTracking(e);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove, true);
+    document.addEventListener('mouseup', handleMouseUp, true);
+    
+    // Store handlers for cleanup
+    window._customDragHandlers = { handleMouseMove, handleMouseUp };
+}
+
+// Cleanup custom drag tracking
+function cleanupCustomDragTracking(e) {
+    if (window._customDragHandlers) {
+        document.removeEventListener('mousemove', window._customDragHandlers.handleMouseMove, true);
+        document.removeEventListener('mouseup', window._customDragHandlers.handleMouseUp, true);
+        window._customDragHandlers = null;
+    }
+    
+    // Remove drag ghost
+    removeDragGhost();
+    
+    // Clean up visual state
+    document.querySelectorAll('.icon-item').forEach(el => {
+        el.classList.remove('dragging', 'drag-over');
+    });
+    
+    // Reset state
+    isDragging = false;
+    draggedIndex = null;
+    draggedElement = null;
+    dragOverElement = null;
+}
+
 // Handle drag and drop
 async function handleDrop(e, targetIndex) {
-    e.preventDefault();
-    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
     
-    if (sourceIndex === targetIndex) return;
+    const sourceIndex = draggedIndex !== null ? draggedIndex : (e && e.dataTransfer ? parseInt(e.dataTransfer.getData('text/plain')) : null);
     
-    // Reorder apps array
+    if (sourceIndex === null || isNaN(sourceIndex) || sourceIndex === targetIndex || sourceIndex < 0 || targetIndex < 0) {
+        return;
+    }
+    
+    if (sourceIndex >= apps.length || targetIndex >= apps.length) {
+        return;
+    }
+    
+    // Reorder apps array locally first for immediate visual feedback
     const [movedApp] = apps.splice(sourceIndex, 1);
     apps.splice(targetIndex, 0, movedApp);
+    
+    // Update visual immediately
+    renderApps();
     
     // Update positions in backend
     try {
         const appIds = apps.map(app => app.id);
-        await invoke('reorder_apps', { appIds });
-        renderApps();
+        await invoke('reorder_apps', { appIds: appIds });
     } catch (error) {
         console.error('Failed to reorder apps:', error);
-        await loadApps(); // Reload on error
+        // Reload on error to restore correct state
+        await loadApps();
     }
 }
 

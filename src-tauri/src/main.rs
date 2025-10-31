@@ -16,6 +16,8 @@ use tauri::{Manager, menu::{MenuBuilder, MenuItemBuilder}, tray::{TrayIconBuilde
 use tauri_plugin_autostart::ManagerExt;
 
 fn main() {
+    println!("Starting...");
+    
     // Initialize logger
     env_logger::init();
 
@@ -136,6 +138,7 @@ fn main() {
                             }
                         }
                         "quit" => {
+                            println!("Exiting");
                             app.exit(0);
                         }
                         _ => {}

@@ -22,8 +22,6 @@ pub fn prevent_app_termination() {
             _cmd: Sel,
             _sender: id,
         ) -> u64 {
-            eprintln!("!!! applicationShouldTerminate called - preventing app termination");
-
             // Close the key window (the focused window) instead of quitting the app
             // For the main launcher window, we'll hide it instead of closing
             unsafe {
@@ -40,15 +38,11 @@ pub fn prevent_app_termination() {
                         String::new()
                     };
 
-                    eprintln!("!!! Key window title: '{}'", title_string);
-
                     if title_string == "App Launcher" {
                         // Hide the launcher window instead of closing it
-                        eprintln!("!!! Hiding launcher window");
                         let _: () = msg_send![key_window, orderOut: nil];
                     } else {
                         // Close other windows (webapps, terminals)
-                        eprintln!("!!! Closing window: {}", title_string);
                         let _: () = msg_send![key_window, close];
                     }
                 }
@@ -68,8 +62,6 @@ pub fn prevent_app_termination() {
         let custom_delegate: id = msg_send![custom_delegate_class, new];
 
         let _: () = msg_send![app, setDelegate: custom_delegate];
-
-        eprintln!("!!! Custom macOS delegate installed to prevent Cmd+Q termination");
     }
 }
 
