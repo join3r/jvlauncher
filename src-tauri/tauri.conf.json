@@ -74,6 +74,7 @@
             "core:window:allow-set-focus",
             "dialog:allow-open",
             "dialog:allow-save",
+            "shell:allow-open",
             "os:allow-platform"
           ]
         },

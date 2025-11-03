@@ -119,6 +119,20 @@
             height: 48px;
             object-fit: contain;
         }
+        .icon-tip {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            opacity: 0.85;
+        }
+        .icon-tip a {
+            color: var(--accent);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .icon-tip a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -163,6 +177,7 @@
                 <button class="btn btn-primary" id="browse-icon-btn">Choose Icon</button>
                 <button class="btn btn-primary" id="paste-icon-btn">Paste Icon</button>
             </div>
+            <div class="icon-tip">Tip: Copy PNG icons from <a id="dashboardicons-link">dashboardicons.com</a></div>
             <div id="icon-preview"></div>
         </div>
         

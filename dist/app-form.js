@@ -34,6 +34,15 @@ const convertFileSrc = (filePath) => {
     return tauri.core.convertFileSrc(filePath);
 };
 
+const openUrl = async (url) => {
+    const tauri = getTauriAPI();
+    if (!tauri || !tauri.shell) {
+        console.error('Tauri shell API not available');
+        return;
+    }
+    await tauri.shell.open(url);
+};
+
 // Convert file path to Tauri-compatible URL
 function toAssetUrl(filePath) {
     if (!filePath) return '';
@@ -580,6 +589,19 @@ async function init() {
                 alert('Failed to paste icon from clipboard. Make sure an image is in your clipboard.');
             }
         });
+
+        // Dashboard icons link
+        const dashboardIconsLink = document.getElementById('dashboardicons-link');
+        if (dashboardIconsLink) {
+            dashboardIconsLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                    await openUrl('https://dashboardicons.com');
+                } catch (error) {
+                    console.error('[AppForm] Failed to open dashboardicons.com:', error);
+                }
+            });
+        }
 
         // Record shortcut button
         const recordBtn = document.getElementById('record-app-shortcut-btn');
