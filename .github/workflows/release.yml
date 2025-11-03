@@ -97,29 +97,11 @@ jobs:
       - name: List build outputs
         if: always()
         run: |
-          echo "Listing target directory structure:"
-          ls -la src-tauri/target/ || echo "No target directory"
-          echo ""
-          echo "Listing release directory:"
-          ls -la src-tauri/target/release/ || echo "No release directory"
-          echo ""
-          echo "Listing bundle directory:"
-          ls -la src-tauri/target/release/bundle/ || echo "No bundle directory"
-          echo ""
-          echo "Listing target-specific directory:"
-          ls -la src-tauri/target/${{ matrix.settings.target }}/ || echo "No target-specific directory"
-          echo ""
-          echo "Listing target-specific release:"
-          ls -la src-tauri/target/${{ matrix.settings.target }}/release/ || echo "No target-specific release"
-          echo ""
-          echo "Listing target-specific bundle:"
-          ls -la src-tauri/target/${{ matrix.settings.target }}/release/bundle/ || echo "No target-specific bundle"
-          echo ""
           echo "Finding all .dmg files:"
-          find src-tauri/target -name "*.dmg" -type f || echo "No .dmg files found"
+          find . -name "*.dmg" -type f || echo "No .dmg files found"
           echo ""
           echo "Finding all .app bundles:"
-          find src-tauri/target -name "*.app" -type d || echo "No .app bundles found"
+          find . -name "*.app" -type d || echo "No .app bundles found"
 
       # Optional: Upload artifacts for debugging/testing before release
       - name: Upload build artifacts
@@ -128,8 +110,8 @@ jobs:
         with:
           name: macos-${{ matrix.settings.arch }}-build
           path: |
-            src-tauri/target/**/release/bundle/**/*.dmg
-            src-tauri/target/**/release/bundle/**/*.app
+            target/${{ matrix.settings.target }}/release/bundle/dmg/*.dmg
+            target/${{ matrix.settings.target }}/release/bundle/macos/*.app
           retention-days: 7
           if-no-files-found: warn
 
