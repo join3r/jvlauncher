@@ -322,7 +322,7 @@ pub fn open_add_app_window(app_handle: AppHandle) -> Result<(), String> {
         WebviewUrl::App("app-form.html".into())
     )
     .title("Add Application")
-    .inner_size(520.0, 560.0)
+    .inner_size(520.0, 680.0)
     .resizable(false)
     .center()
     .always_on_top(true)

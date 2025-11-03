@@ -22,7 +22,13 @@ cd src-tauri
 echo "Building release version..."
 cargo tauri build
 
+# Return to project root for path display
+cd ..
+
 echo ""
-echo "Build complete! The installer can be found in:"
-echo "src-tauri/target/release/bundle/"
+echo "Build complete!"
+echo ""
+echo "Outputs:"
+echo "  - .dmg file: ./target/release/bundle/"
+echo "  - .app bundle: ./target/release/bundle/"
 
