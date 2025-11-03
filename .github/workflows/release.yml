@@ -26,24 +26,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Note: This project doesn't use a package manager for frontend dependencies
-      # The frontend is pre-built in the dist/ directory
-      # If you add npm/bun/yarn dependencies in the future, uncomment the sections below:
+      # Setup Bun for installing Tauri CLI (much faster than cargo install)
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-      # - name: Setup Bun
-      #   uses: oven-sh/setup-bun@v2
-      #   with:
-      #     bun-version: latest
-
-      # - name: Cache Bun dependencies
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       ~/.bun/install/cache
-      #       node_modules
-      #     key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-bun-
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -62,21 +59,9 @@ jobs:
           # Save cache even if build fails (useful for incremental improvements)
           save-if: true
 
-      # - name: Install frontend dependencies
-      #   run: bun install --frozen-lockfile
-      # Note: Skipped because this project has pre-built frontend in dist/
-
-      # Optional: Cache Tauri CLI to avoid reinstalling
-      - name: Cache Tauri CLI
-        id: cache-tauri-cli
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/bin/cargo-tauri
-          key: ${{ runner.os }}-tauri-cli-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Install Tauri CLI
-        if: steps.cache-tauri-cli.outputs.cache-hit != 'true'
-        run: cargo install tauri-cli --version "^2.0.0" --locked
+      # Install Tauri CLI via Bun (uses pre-built binaries, much faster than cargo install)
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -86,8 +71,8 @@ jobs:
           CARGO_INCREMENTAL: 1
           CARGO_PROFILE_RELEASE_LTO: "thin"
         with:
-          # Use the cached Tauri CLI
-          tauriScript: cargo tauri
+          # Use Bun-installed Tauri CLI (pre-built binaries)
+          tauriScript: bun tauri
           # Build for specific target
           args: --target ${{ matrix.settings.target }}
           # Release configuration
@@ -108,6 +93,34 @@ jobs:
           includeRelease: true
           includeDebug: false
 
+      # Debug: List build outputs to see where files actually are
+      - name: List build outputs
+        if: always()
+        run: |
+          echo "Listing target directory structure:"
+          ls -la src-tauri/target/ || echo "No target directory"
+          echo ""
+          echo "Listing release directory:"
+          ls -la src-tauri/target/release/ || echo "No release directory"
+          echo ""
+          echo "Listing bundle directory:"
+          ls -la src-tauri/target/release/bundle/ || echo "No bundle directory"
+          echo ""
+          echo "Listing target-specific directory:"
+          ls -la src-tauri/target/${{ matrix.settings.target }}/ || echo "No target-specific directory"
+          echo ""
+          echo "Listing target-specific release:"
+          ls -la src-tauri/target/${{ matrix.settings.target }}/release/ || echo "No target-specific release"
+          echo ""
+          echo "Listing target-specific bundle:"
+          ls -la src-tauri/target/${{ matrix.settings.target }}/release/bundle/ || echo "No target-specific bundle"
+          echo ""
+          echo "Finding all .dmg files:"
+          find src-tauri/target -name "*.dmg" -type f || echo "No .dmg files found"
+          echo ""
+          echo "Finding all .app bundles:"
+          find src-tauri/target -name "*.app" -type d || echo "No .app bundles found"
+
       # Optional: Upload artifacts for debugging/testing before release
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -115,8 +128,8 @@ jobs:
         with:
           name: macos-${{ matrix.settings.arch }}-build
           path: |
-            src-tauri/target/${{ matrix.settings.target }}/release/bundle/dmg/*.dmg
-            src-tauri/target/${{ matrix.settings.target }}/release/bundle/macos/*.app
+            src-tauri/target/**/release/bundle/**/*.dmg
+            src-tauri/target/**/release/bundle/**/*.app
           retention-days: 7
           if-no-files-found: warn
 

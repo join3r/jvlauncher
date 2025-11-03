@@ -354,6 +354,36 @@ pub fn resize_main_window(app_handle: AppHandle, grid_cols: i32, grid_rows: i32)
     Ok(())
 }
 
+/// Auto-resize a window to fit its content
+/// This command is called from JavaScript after measuring the actual content dimensions
+#[tauri::command]
+pub fn auto_resize_window(
+    app_handle: AppHandle,
+    window_label: String,
+    content_width: f64,
+    content_height: f64,
+) -> Result<(), String> {
+    use tauri::Manager;
+
+    // Apply reasonable min/max constraints
+    let width = content_width.max(400.0).min(1200.0);
+    let height = content_height.max(200.0).min(1000.0);
+
+    // Get the window and resize
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
+        // Use Logical size to handle high-DPI displays correctly
+        window.set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width,
+            height,
+        }))
+        .map_err(|e| format!("Failed to resize window: {}", e))?;
+    } else {
+        return Err(format!("Window '{}' not found", window_label));
+    }
+
+    Ok(())
+}
+
 /// Open the settings window
 #[tauri::command]
 pub fn open_settings_window(app_handle: AppHandle) -> Result<(), String> {

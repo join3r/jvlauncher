@@ -49,6 +49,44 @@ function toAssetUrl(filePath) {
     return convertFileSrc(filePath);
 }
 
+// Auto-resize window to fit content
+async function autoResizeWindow() {
+    console.log('[AppForm] autoResizeWindow called');
+    try {
+        const window = getCurrentWindow();
+        const windowLabel = window.label;
+        console.log('[AppForm] Window label:', windowLabel);
+
+        // Measure the actual content container, not the body/html which have height: 100%
+        const container = document.querySelector('.app-form-container');
+        if (!container) {
+            console.warn('[AppForm] App form container not found, skipping auto-resize');
+            return;
+        }
+
+        console.log('[AppForm] Container found:', container);
+        console.log('[AppForm] Container scrollHeight:', container.scrollHeight);
+        console.log('[AppForm] Container offsetWidth:', container.offsetWidth);
+
+        // Get the actual content dimensions from the container
+        const contentHeight = container.scrollHeight + 36; // Add some padding for window chrome
+        const contentWidth = container.offsetWidth + 40; // Add horizontal padding
+
+        console.log('[AppForm] Auto-resize - Content dimensions:', contentWidth, 'x', contentHeight);
+
+        // Call the backend to resize the window
+        await invoke('auto_resize_window', {
+            windowLabel: windowLabel,
+            contentWidth: contentWidth,
+            contentHeight: contentHeight
+        });
+
+        console.log('[AppForm] Window resized successfully');
+    } catch (error) {
+        console.error('[AppForm] Failed to auto-resize window:', error);
+    }
+}
+
 // Platform detection
 let isMacOS = false;
 
@@ -272,6 +310,14 @@ function updateIconPreview() {
     } else {
         preview.innerHTML = '';
     }
+
+    // Auto-resize window when icon preview changes
+    // Use requestAnimationFrame to ensure DOM has updated
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            autoResizeWindow();
+        }, 50);
+    });
 }
 
 // Fetch web icon from URL
@@ -321,6 +367,14 @@ function updateFieldsVisibility() {
     document.getElementById('url-group').style.display = type === 'webapp' ? 'block' : 'none';
     document.getElementById('binary-group').style.display = type !== 'webapp' ? 'block' : 'none';
     document.getElementById('params-group').style.display = type !== 'webapp' ? 'block' : 'none';
+
+    // Auto-resize window when field visibility changes
+    // Use requestAnimationFrame to ensure DOM has updated
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            autoResizeWindow();
+        }, 50);
+    });
 }
 
 // Load app data (for edit mode)
@@ -650,6 +704,12 @@ async function init() {
         });
 
         console.log('[AppForm] Initialization complete');
+
+        // Auto-resize window to fit content after everything is loaded
+        // Use a small delay to ensure all content is rendered
+        setTimeout(() => {
+            autoResizeWindow();
+        }, 100);
     } catch (error) {
         console.error('[AppForm] Error during initialization:', error);
         alert('Failed to initialize app form: ' + error.message);

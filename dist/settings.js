@@ -20,6 +20,44 @@ const getCurrentWindow = () => {
 // Platform detection
 let isMacOS = false;
 
+// Auto-resize window to fit content
+async function autoResizeWindow() {
+    console.log('[Settings] autoResizeWindow called');
+    try {
+        const window = getCurrentWindow();
+        const windowLabel = window.label;
+        console.log('[Settings] Window label:', windowLabel);
+
+        // Measure the actual content container, not the body/html which have height: 100%
+        const container = document.querySelector('.settings-container');
+        if (!container) {
+            console.warn('[Settings] Settings container not found, skipping auto-resize');
+            return;
+        }
+
+        console.log('[Settings] Container found:', container);
+        console.log('[Settings] Container scrollHeight:', container.scrollHeight);
+        console.log('[Settings] Container offsetWidth:', container.offsetWidth);
+
+        // Get the actual content dimensions from the container
+        const contentHeight = container.scrollHeight + 36; // Add some padding for window chrome
+        const contentWidth = container.offsetWidth + 40; // Add horizontal padding
+
+        console.log('[Settings] Auto-resize - Content dimensions:', contentWidth, 'x', contentHeight);
+
+        // Call the backend to resize the window
+        await invoke('auto_resize_window', {
+            windowLabel: windowLabel,
+            contentWidth: contentWidth,
+            contentHeight: contentHeight
+        });
+
+        console.log('[Settings] Window resized successfully');
+    } catch (error) {
+        console.error('[Settings] Failed to auto-resize window:', error);
+    }
+}
+
 // Detect platform and apply platform-specific class
 async function detectPlatform() {
     console.log('[Settings] Starting platform detection...');
@@ -258,16 +296,37 @@ async function checkForUpdates() {
             }
 
             updateInfoEl.style.display = 'block';
+
+            // Auto-resize window to fit the expanded update section
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    autoResizeWindow();
+                }, 50);
+            });
         } else {
             statusEl.textContent = `You're up to date! (v${updateInfo.current_version})`;
             statusEl.style.color = 'var(--text-secondary)';
             updateInfoEl.style.display = 'none';
+
+            // Auto-resize window after hiding update section
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    autoResizeWindow();
+                }, 50);
+            });
         }
     } catch (error) {
         console.error('Failed to check for updates:', error);
         statusEl.textContent = 'Failed to check for updates';
         statusEl.style.color = '#dc3545';
         updateInfoEl.style.display = 'none';
+
+        // Auto-resize window after hiding update section
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                autoResizeWindow();
+            }, 50);
+        });
     } finally {
         checkBtn.disabled = false;
         checkBtn.textContent = 'Check for Updates';
@@ -445,6 +504,12 @@ async function init() {
         });
 
         console.log('[Settings] Initialization complete');
+
+        // Auto-resize window to fit content after everything is loaded
+        // Use a small delay to ensure all content is rendered
+        setTimeout(() => {
+            autoResizeWindow();
+        }, 100);
     } catch (error) {
         console.error('[Settings] Error during initialization:', error);
         alert('Failed to initialize settings: ' + error.message);

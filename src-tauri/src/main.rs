@@ -199,6 +199,7 @@ fn main() {
             commands::open_add_app_window,
             commands::open_edit_app_window,
             commands::resize_main_window,
+            commands::auto_resize_window,
             commands::send_terminal_input,
             commands::resize_terminal,
             updater::check_for_updates,
