@@ -1,6 +1,6 @@
 # Setup Guide
 
-This guide will help you set up and run the App Launcher on your system.
+This guide will help you set up and run jvlauncher on your system.
 
 ## Prerequisites
 
@@ -107,7 +107,7 @@ The built application will be located in:
 After building, you can:
 
 1. Install the generated package/installer
-2. Or run directly: `./src-tauri/target/release/app-launcher`
+2. Or run directly: `./src-tauri/target/release/jvlauncher`
 
 ## First Run
 
@@ -173,9 +173,9 @@ Access settings via the gear icon in the top-right:
 
 All data is stored in your application data directory:
 
-- **macOS**: `~/Library/Application Support/com.applauncher.dev/`
-- **Linux**: `~/.local/share/com.applauncher.dev/`
-- **Windows**: `%APPDATA%\com.applauncher.dev\`
+- **macOS**: `~/Library/Application Support/com.jvlauncher.dev/`
+- **Linux**: `~/.local/share/com.jvlauncher.dev/`
+- **Windows**: `%APPDATA%\com.jvlauncher.dev\`
 
 Contents:
 - `launcher.db`: SQLite database with apps and settings
@@ -233,29 +233,29 @@ sudo apt install dbus-x11
 
 For development builds that won't open:
 ```bash
-xattr -cr src-tauri/target/release/bundle/macos/app-launcher.app
+xattr -cr src-tauri/target/release/bundle/macos/jvlauncher.app
 ```
 
 ## Uninstalling
 
 ### macOS
 1. Quit the application
-2. Move `App Launcher.app` from Applications to Trash
-3. Remove data: `rm -rf ~/Library/Application\ Support/com.applauncher.dev/`
+2. Move `jvlauncher.app` from Applications to Trash
+3. Remove data: `rm -rf ~/Library/Application\ Support/com.jvlauncher.dev/`
 
 ### Linux
 ```bash
 # If installed via package manager
-sudo apt remove app-launcher  # or equivalent
+sudo apt remove jvlauncher  # or equivalent
 
 # Manual installation
-rm -rf ~/.local/share/applications/app-launcher.desktop
-rm -rf ~/.local/share/com.applauncher.dev/
+rm -rf ~/.local/share/applications/jvlauncher.desktop
+rm -rf ~/.local/share/com.jvlauncher.dev/
 ```
 
 ### Windows
 1. Uninstall via "Add or Remove Programs"
-2. Remove data folder: `%APPDATA%\com.applauncher.dev\`
+2. Remove data folder: `%APPDATA%\com.jvlauncher.dev\`
 
 ## Development
 

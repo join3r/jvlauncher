@@ -1,4 +1,4 @@
-# App Launcher
+# jvlauncher
 
 A cross-platform application launcher built with Tauri 2.0 and Rust. Launch applications, webapps, and terminal applications with customizable shortcuts and an intuitive grid interface.
 
@@ -99,9 +99,9 @@ For more details, see [MACOS_LIQUID_GLASS_THEME.md](MACOS_LIQUID_GLASS_THEME.md)
 
 Settings are stored in a SQLite database in your application data directory:
 
-- **macOS**: `~/Library/Application Support/com.applauncher.dev/`
-- **Linux**: `~/.local/share/com.applauncher.dev/`
-- **Windows**: `%APPDATA%\com.applauncher.dev\`
+- **macOS**: `~/Library/Application Support/com.jvlauncher.dev/`
+- **Linux**: `~/.local/share/com.jvlauncher.dev/`
+- **Windows**: `%APPDATA%\com.jvlauncher.dev\`
 
 ## Architecture
 

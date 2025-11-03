@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Development script for App Launcher
+# Development script for jvlauncher
 
-echo "Starting App Launcher in development mode..."
+echo "Starting jvlauncher in development mode..."
 
 # Check if Rust is installed
 if ! command -v cargo &> /dev/null; then

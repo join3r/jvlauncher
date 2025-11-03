@@ -228,7 +228,7 @@ Added shortcut matching logic to the global keyboard event handler:
 **Problem:** When adding an app without manually selecting an icon (letting the system extract it from the binary), the icon wouldn't load and showed this error:
 ```
 Failed to load resource: unsupported URL
-asset://localhost/Users/join3r/Library/Application%20Support/com.applauncher.dev/icons/Slack.png
+asset://localhost/Users/join3r/Library/Application%20Support/com.jvlauncher.dev/icons/Slack.png
 ```
 
 **Root Cause:** Two issues:

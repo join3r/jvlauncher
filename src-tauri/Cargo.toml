@@ -1,5 +1,5 @@
 [package]
-name = "app-launcher"
+name = "jvlauncher"
 version = "0.1.0"
 description = "A cross-platform application launcher"
 authors = ["you"]

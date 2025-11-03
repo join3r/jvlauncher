@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Build script for App Launcher
+# Build script for jvlauncher
 
-echo "Building App Launcher..."
+echo "Building jvlauncher..."
 
 # Check if Rust is installed
 if ! command -v cargo &> /dev/null; then

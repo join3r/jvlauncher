@@ -1,8 +1,8 @@
-# Project Overview - App Launcher
+# Project Overview - jvlauncher
 
-## What is App Launcher?
+## What is jvlauncher?
 
-App Launcher is a cross-platform application launcher inspired by tools like Alfred, Raycast, and Spotlight. It provides a fast, keyboard-driven interface for launching applications, webapps, and terminal programs.
+jvlauncher is a cross-platform application launcher inspired by tools like Alfred, Raycast, and Spotlight. It provides a fast, keyboard-driven interface for launching applications, webapps, and terminal programs.
 
 ## Key Features ✨
 

@@ -1,10 +1,10 @@
 # Architecture
 
-This document describes the technical architecture of App Launcher.
+This document describes the technical architecture of jvlauncher.
 
 ## Overview
 
-App Launcher is built using:
+jvlauncher is built using:
 - **Tauri 2.0**: Cross-platform desktop application framework
 - **Rust**: Backend logic and system integration
 - **HTML/CSS/JavaScript**: User interface

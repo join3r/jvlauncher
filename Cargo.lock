@@ -117,39 +117,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 
 [[package]]
-name = "app-launcher"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cocoa",
- "env_logger",
- "icns",
- "image",
- "log",
- "objc",
- "portable-pty",
- "r2d2",
- "r2d2_sqlite",
- "reqwest 0.11.27",
- "rusqlite",
- "scraper",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-dialog",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-os",
- "tauri-plugin-shell",
- "thiserror 1.0.69",
- "tokio",
- "url",
- "uuid",
- "winapi",
-]
-
-[[package]]
 name = "ashpd"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2331,6 +2298,39 @@ checksum = "5dea2b27dd239b2556ed7a25ba842fe47fd602e7fc7433c2a8d6106d4d9edd70"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "jvlauncher"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cocoa",
+ "env_logger",
+ "icns",
+ "image",
+ "log",
+ "objc",
+ "portable-pty",
+ "r2d2",
+ "r2d2_sqlite",
+ "reqwest 0.11.27",
+ "rusqlite",
+ "scraper",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-dialog",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-os",
+ "tauri-plugin-shell",
+ "thiserror 1.0.69",
+ "tokio",
+ "url",
+ "uuid",
+ "winapi",
 ]
 
 [[package]]

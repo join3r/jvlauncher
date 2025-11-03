@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get up and running with App Launcher in under 5 minutes!
+Get up and running with jvlauncher in under 5 minutes!
 
 ## Installation
 

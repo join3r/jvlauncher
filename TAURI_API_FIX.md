@@ -83,7 +83,7 @@ document.addEventListener('keydown', (e) => {
 ```bash
 cd /Users/join3r/Downloads/Temp/test-impl
 # Kill any existing instances
-pkill -f app-launcher
+pkill -f jvlauncher
 # Start fresh
 ./dev.sh
 ```

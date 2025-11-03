@@ -14,7 +14,7 @@ pub fn prevent_app_termination() {
 
         // Set up a custom delegate method to prevent termination
         let superclass = class!(NSObject);
-        let mut decl = objc::declare::ClassDecl::new("AppLauncherDelegate", superclass).unwrap();
+        let mut decl = objc::declare::ClassDecl::new("JVLauncherDelegate", superclass).unwrap();
 
         // NSTerminateCancel = 0
         extern "C" fn application_should_terminate(
@@ -38,7 +38,7 @@ pub fn prevent_app_termination() {
                         String::new()
                     };
 
-                    if title_string == "App Launcher" {
+                    if title_string == "jvlauncher" {
                         // Hide the launcher window instead of closing it
                         let _: () = msg_send![key_window, orderOut: nil];
                     } else {

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Verification script for App Launcher project
+# Verification script for jvlauncher project
 
-echo "🔍 Verifying App Launcher Project..."
+echo "🔍 Verifying jvlauncher Project..."
 echo ""
 
 # Check for required tools

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial release of App Launcher
+- Initial release of jvlauncher
 - Global shortcut to show/hide launcher
 - Support for three app types:
   - Native applications with command-line parameters
