@@ -175,11 +175,13 @@ pub fn paste_icon_from_clipboard(
 /// Save an icon from a file to temporary storage
 #[tauri::command]
 pub fn save_icon_from_file_temp(
-    _app_handle: AppHandle,
+    app_handle: AppHandle,
     source_path: String,
 ) -> Result<String, String> {
-    let temp_dir = std::env::temp_dir();
-    let temp_icons_dir = temp_dir.join("jvlauncher_temp_icons");
+    let app_data = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    let temp_icons_dir = app_data.join("temp_icons");
     icon_extractor::ensure_icons_dir(&temp_icons_dir)
         .map_err(|e| format!("Failed to create temp icons directory: {}", e))?;
 
@@ -193,10 +195,12 @@ pub fn save_icon_from_file_temp(
 /// Save an icon from clipboard to temporary storage
 #[tauri::command]
 pub fn paste_icon_from_clipboard_temp(
-    _app_handle: AppHandle,
+    app_handle: AppHandle,
 ) -> Result<String, String> {
-    let temp_dir = std::env::temp_dir();
-    let temp_icons_dir = temp_dir.join("jvlauncher_temp_icons");
+    let app_data = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    let temp_icons_dir = app_data.join("temp_icons");
     icon_extractor::ensure_icons_dir(&temp_icons_dir)
         .map_err(|e| format!("Failed to create temp icons directory: {}", e))?;
 
