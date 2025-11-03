@@ -150,6 +150,7 @@ let currentRecordingButton = null;
 
 // Icon state
 let iconPath = null;
+let tempIconPath = null; // Track temporary icon path before save
 let userSelectedIcon = false; // Track if user manually selected an icon
 
 // App data (for edit mode)
@@ -253,10 +254,12 @@ function handleRecordingKeyDown(event) {
 // Update icon preview
 function updateIconPreview() {
     const preview = document.getElementById('icon-preview');
-    if (iconPath) {
+    // Use temp icon path if available, otherwise use permanent icon path
+    const displayPath = tempIconPath || iconPath;
+    if (displayPath) {
         // Add cache-busting timestamp to force browser to reload the image
         const cacheBuster = `?t=${Date.now()}`;
-        preview.innerHTML = `<img src="${toAssetUrl(iconPath)}${cacheBuster}">`;
+        preview.innerHTML = `<img src="${toAssetUrl(displayPath)}${cacheBuster}">`;
     } else {
         preview.innerHTML = '';
     }
@@ -377,6 +380,22 @@ async function saveApp() {
     }
     
     try {
+        // Finalize temp icon if one was selected
+        let finalIconPath = iconPath;
+        if (tempIconPath) {
+            try {
+                finalIconPath = await invoke('finalize_temp_icon', {
+                    tempIconPath: tempIconPath,
+                    appName: name
+                });
+                console.log('[AppForm] Finalized temp icon:', finalIconPath);
+            } catch (e) {
+                console.error('[AppForm] Failed to finalize temp icon:', e);
+                alert('Failed to save icon: ' + e);
+                return;
+            }
+        }
+
         if (isEditMode && appData) {
             // Update existing app
             await invoke('update_app', {
@@ -384,7 +403,7 @@ async function saveApp() {
                     id: appData.id,
                     app_type: appData.app_type,
                     name: name,
-                    icon_path: iconPath,
+                    icon_path: finalIconPath,
                     position: appData.position,
                     shortcut: shortcut || null,
                     binary_path: binaryPath || null,
@@ -399,7 +418,7 @@ async function saveApp() {
                 newApp: {
                     app_type: appType,
                     name: name,
-                    icon_path: iconPath,
+                    icon_path: finalIconPath,
                     shortcut: shortcut || null,
                     binary_path: binaryPath || null,
                     cli_params: cliParams || null,
@@ -519,10 +538,18 @@ async function init() {
                     }]
                 });
                 if (selected) {
-                    const appName = document.getElementById('app-name').value.trim() || 'app';
-                    iconPath = await invoke('save_icon_from_file', {
-                        sourcePath: selected,
-                        appName: appName
+                    // Clean up any previous temp icon
+                    if (tempIconPath) {
+                        try {
+                            await invoke('cleanup_temp_icon', { tempIconPath: tempIconPath });
+                        } catch (e) {
+                            console.log('[AppForm] Failed to cleanup previous temp icon:', e);
+                        }
+                    }
+
+                    // Save to temporary location
+                    tempIconPath = await invoke('save_icon_from_file_temp', {
+                        sourcePath: selected
                     });
                     userSelectedIcon = true; // Mark that user manually selected an icon
                     updateIconPreview();
@@ -535,10 +562,17 @@ async function init() {
         // Paste icon button
         document.getElementById('paste-icon-btn').addEventListener('click', async () => {
             try {
-                const appName = document.getElementById('app-name').value.trim() || 'app';
-                iconPath = await invoke('paste_icon_from_clipboard', {
-                    appName: appName
-                });
+                // Clean up any previous temp icon
+                if (tempIconPath) {
+                    try {
+                        await invoke('cleanup_temp_icon', { tempIconPath: tempIconPath });
+                    } catch (e) {
+                        console.log('[AppForm] Failed to cleanup previous temp icon:', e);
+                    }
+                }
+
+                // Save to temporary location
+                tempIconPath = await invoke('paste_icon_from_clipboard_temp');
                 userSelectedIcon = true; // Mark that user manually selected an icon
                 updateIconPreview();
             } catch (error) {
@@ -562,6 +596,16 @@ async function init() {
         // Cancel button
         document.getElementById('cancel-app-btn').addEventListener('click', async () => {
             stopRecording();
+
+            // Clean up temp icon if exists
+            if (tempIconPath) {
+                try {
+                    await invoke('cleanup_temp_icon', { tempIconPath: tempIconPath });
+                } catch (e) {
+                    console.log('[AppForm] Failed to cleanup temp icon on cancel:', e);
+                }
+            }
+
             const window = getCurrentWindow();
             await window.close();
         });
@@ -569,6 +613,15 @@ async function init() {
         // Handle Escape key
         document.addEventListener('keydown', async (e) => {
             if (e.key === 'Escape' && !isRecording) {
+                // Clean up temp icon if exists
+                if (tempIconPath) {
+                    try {
+                        await invoke('cleanup_temp_icon', { tempIconPath: tempIconPath });
+                    } catch (e) {
+                        console.log('[AppForm] Failed to cleanup temp icon on escape:', e);
+                    }
+                }
+
                 const window = getCurrentWindow();
                 await window.close();
             }

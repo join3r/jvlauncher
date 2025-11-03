@@ -172,6 +172,87 @@ pub fn paste_icon_from_clipboard(
         .map_err(|e| format!("Failed to paste icon from clipboard: {}", e))
 }
 
+/// Save an icon from a file to temporary storage
+#[tauri::command]
+pub fn save_icon_from_file_temp(
+    _app_handle: AppHandle,
+    source_path: String,
+) -> Result<String, String> {
+    let temp_dir = std::env::temp_dir();
+    let temp_icons_dir = temp_dir.join("jvlauncher_temp_icons");
+    icon_extractor::ensure_icons_dir(&temp_icons_dir)
+        .map_err(|e| format!("Failed to create temp icons directory: {}", e))?;
+
+    // Generate unique filename using UUID
+    let temp_name = uuid::Uuid::new_v4().to_string();
+
+    icon_extractor::save_icon_from_file(&source_path, &temp_icons_dir, &temp_name)
+        .map_err(|e| format!("Failed to save temp icon: {}", e))
+}
+
+/// Save an icon from clipboard to temporary storage
+#[tauri::command]
+pub fn paste_icon_from_clipboard_temp(
+    _app_handle: AppHandle,
+) -> Result<String, String> {
+    let temp_dir = std::env::temp_dir();
+    let temp_icons_dir = temp_dir.join("jvlauncher_temp_icons");
+    icon_extractor::ensure_icons_dir(&temp_icons_dir)
+        .map_err(|e| format!("Failed to create temp icons directory: {}", e))?;
+
+    // Generate unique filename using UUID
+    let temp_name = uuid::Uuid::new_v4().to_string();
+
+    icon_extractor::save_icon_from_clipboard(&temp_icons_dir, &temp_name)
+        .map_err(|e| format!("Failed to paste temp icon from clipboard: {}", e))
+}
+
+/// Finalize a temporary icon by moving it to permanent storage
+#[tauri::command]
+pub fn finalize_temp_icon(
+    app_handle: AppHandle,
+    temp_icon_path: String,
+    app_name: String,
+) -> Result<String, String> {
+    use std::path::Path;
+
+    let temp_path = Path::new(&temp_icon_path);
+    if !temp_path.exists() {
+        return Err("Temporary icon file does not exist".to_string());
+    }
+
+    let app_data = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    let icons_dir = app_data.join("icons");
+    icon_extractor::ensure_icons_dir(&icons_dir)
+        .map_err(|e| format!("Failed to create icons directory: {}", e))?;
+
+    // Copy temp icon to permanent location
+    let final_path = icons_dir.join(format!("{}.png", app_name));
+    std::fs::copy(&temp_path, &final_path)
+        .map_err(|e| format!("Failed to copy temp icon to permanent location: {}", e))?;
+
+    // Clean up temp file
+    let _ = std::fs::remove_file(&temp_path);
+
+    Ok(final_path.to_string_lossy().to_string())
+}
+
+/// Clean up a temporary icon file
+#[tauri::command]
+pub fn cleanup_temp_icon(temp_icon_path: String) -> Result<(), String> {
+    use std::path::Path;
+
+    let temp_path = Path::new(&temp_icon_path);
+    if temp_path.exists() {
+        std::fs::remove_file(&temp_path)
+            .map_err(|e| format!("Failed to remove temp icon: {}", e))?;
+    }
+
+    Ok(())
+}
+
 /// Get application settings
 #[tauri::command]
 pub fn get_settings(pool: State<DbPool>) -> Result<Settings, String> {
