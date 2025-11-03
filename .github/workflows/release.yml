@@ -19,9 +19,6 @@ jobs:
           - platform: 'macos-latest'
             target: 'aarch64-apple-darwin'
             arch: 'aarch64'
-          - platform: 'macos-latest'
-            target: 'x86_64-apple-darwin'
-            arch: 'x64'
 
     runs-on: ${{ matrix.settings.platform }}
     
@@ -98,11 +95,10 @@ jobs:
           releaseName: 'jvlauncher v__VERSION__'
           releaseBody: |
             ## What's Changed
-            
-            Download the appropriate version for your Mac:
-            - **Apple Silicon (M1/M2/M3)**: `jvlauncher_*_aarch64.dmg`
-            - **Intel**: `jvlauncher_*_x64.dmg`
-            
+
+            Download for Apple Silicon Macs (M1/M2/M3/M4):
+            - `jvlauncher_*_aarch64.dmg`
+
             See the assets below to download and install this version.
           releaseDraft: true
           prerelease: false
