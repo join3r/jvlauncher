@@ -1,0 +1,145 @@
+name: 'Release macOS'
+
+on:
+  workflow_dispatch:
+
+# Optimize concurrency - cancel in-progress runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-macos:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - platform: 'macos-latest'
+            target: 'aarch64-apple-darwin'
+            arch: 'aarch64'
+          - platform: 'macos-latest'
+            target: 'x86_64-apple-darwin'
+            arch: 'x64'
+
+    runs-on: ${{ matrix.settings.platform }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Note: This project doesn't use a package manager for frontend dependencies
+      # The frontend is pre-built in the dist/ directory
+      # If you add npm/bun/yarn dependencies in the future, uncomment the sections below:
+
+      # - name: Setup Bun
+      #   uses: oven-sh/setup-bun@v2
+      #   with:
+      #     bun-version: latest
+
+      # - name: Cache Bun dependencies
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: |
+      #       ~/.bun/install/cache
+      #       node_modules
+      #     key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-bun-
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.target }}
+
+      # Aggressive Rust caching - this is the biggest time saver
+      - name: Cache Rust dependencies
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          # Cache key includes target architecture for separate caches per platform
+          key: ${{ matrix.settings.target }}
+          # Share cache between branches to maximize cache hits
+          shared-key: "rust-cache"
+          # Save cache even if build fails (useful for incremental improvements)
+          save-if: true
+
+      # - name: Install frontend dependencies
+      #   run: bun install --frozen-lockfile
+      # Note: Skipped because this project has pre-built frontend in dist/
+
+      # Optional: Cache Tauri CLI to avoid reinstalling
+      - name: Cache Tauri CLI
+        id: cache-tauri-cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-tauri
+          key: ${{ runner.os }}-tauri-cli-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Tauri CLI
+        if: steps.cache-tauri-cli.outputs.cache-hit != 'true'
+        run: cargo install tauri-cli --version "^2.0.0" --locked
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optimize build performance
+          CARGO_INCREMENTAL: 1
+          CARGO_PROFILE_RELEASE_LTO: "thin"
+        with:
+          # Use the cached Tauri CLI
+          tauriScript: cargo tauri
+          # Build for specific target
+          args: --target ${{ matrix.settings.target }}
+          # Release configuration
+          tagName: v__VERSION__
+          releaseName: 'jvlauncher v__VERSION__'
+          releaseBody: |
+            ## What's Changed
+            
+            Download the appropriate version for your Mac:
+            - **Apple Silicon (M1/M2/M3)**: `jvlauncher_*_aarch64.dmg`
+            - **Intel**: `jvlauncher_*_x64.dmg`
+            
+            See the assets below to download and install this version.
+          releaseDraft: true
+          prerelease: false
+          # Include updater JSON for auto-updates
+          includeUpdaterJson: true
+          # Only include release builds (not debug)
+          includeRelease: true
+          includeDebug: false
+
+      # Optional: Upload artifacts for debugging/testing before release
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-${{ matrix.settings.arch }}-build
+          path: |
+            src-tauri/target/${{ matrix.settings.target }}/release/bundle/dmg/*.dmg
+            src-tauri/target/${{ matrix.settings.target }}/release/bundle/macos/*.app
+          retention-days: 7
+          if-no-files-found: warn
+
+  # Optional: Create a universal binary (combines both architectures)
+  # Uncomment this job if you want to provide a universal macOS build
+  # create-universal-binary:
+  #   needs: publish-macos
+  #   runs-on: macos-latest
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - name: Download artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: artifacts
+  #     
+  #     - name: Create universal binary
+  #       run: |
+  #         # Script to combine aarch64 and x64 binaries into universal binary
+  #         # This requires additional tooling and configuration
+  #         echo "Universal binary creation would go here"
+
