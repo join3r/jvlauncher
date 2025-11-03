@@ -60,7 +60,12 @@
             "dialog:allow-open",
             "dialog:allow-save",
             "shell:allow-open",
-            "os:allow-platform"
+            "os:allow-platform",
+            "updater:default",
+            "updater:allow-check",
+            "updater:allow-download",
+            "updater:allow-install",
+            "updater:allow-download-and-install"
           ]
         },
         {
@@ -75,7 +80,12 @@
             "dialog:allow-open",
             "dialog:allow-save",
             "shell:allow-open",
-            "os:allow-platform"
+            "os:allow-platform",
+            "updater:default",
+            "updater:allow-check",
+            "updater:allow-download",
+            "updater:allow-install",
+            "updater:allow-download-and-install"
           ]
         },
         {
@@ -93,6 +103,18 @@
     },
     "withGlobalTauri": true
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/join3r/jvlauncher/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "pubkey": "",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
 }
 

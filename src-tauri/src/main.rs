@@ -8,6 +8,7 @@ mod icon_fetcher;
 mod launcher;
 mod shortcut_manager;
 mod terminal;
+mod updater;
 
 #[cfg(target_os = "macos")]
 mod macos_delegate;
@@ -30,6 +31,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             // Set activation policy to Accessory on macOS
             // This makes the app a menu bar app that doesn't appear in the Dock
@@ -164,6 +166,12 @@ fn main() {
             // Note: Window will stay visible until user presses Escape or the global shortcut again
             // This prevents the window from disappearing when releasing the keyboard shortcut
 
+            // Start background update check
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                updater::check_updates_on_startup(app_handle).await;
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -193,6 +201,8 @@ fn main() {
             commands::resize_main_window,
             commands::send_terminal_input,
             commands::resize_terminal,
+            updater::check_for_updates,
+            updater::download_and_install_update,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

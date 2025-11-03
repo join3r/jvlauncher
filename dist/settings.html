@@ -187,6 +187,25 @@
                     <span>Start at login</span>
                 </label>
             </div>
+
+            <div class="row-label">Updates</div>
+            <div class="row-control" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                    <button type="button" class="btn btn-primary" id="check-updates-btn">Check for Updates</button>
+                    <span id="update-status" style="font-size: 13px; opacity: 0.8;"></span>
+                </div>
+                <div id="update-info" style="display: none; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; width: 100%; box-sizing: border-box;">
+                    <div style="font-weight: 600; margin-bottom: 8px;">Update Available!</div>
+                    <div style="font-size: 13px; opacity: 0.9; margin-bottom: 4px;">
+                        <strong>Current:</strong> <span id="current-version"></span>
+                    </div>
+                    <div style="font-size: 13px; opacity: 0.9; margin-bottom: 12px;">
+                        <strong>Latest:</strong> <span id="latest-version"></span>
+                    </div>
+                    <div id="update-body" style="font-size: 13px; opacity: 0.8; margin-bottom: 12px; max-height: 100px; overflow-y: auto;"></div>
+                    <button type="button" class="btn btn-success" id="install-update-btn">Download & Install</button>
+                </div>
+            </div>
         </div>
 
         <div class="actions-bar">

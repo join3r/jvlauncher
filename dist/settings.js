@@ -228,6 +228,98 @@ async function loadSettings() {
     }
 }
 
+// Update functionality
+async function checkForUpdates() {
+    const checkBtn = document.getElementById('check-updates-btn');
+    const statusEl = document.getElementById('update-status');
+    const updateInfoEl = document.getElementById('update-info');
+
+    try {
+        checkBtn.disabled = true;
+        checkBtn.textContent = 'Checking...';
+        statusEl.textContent = 'Checking for updates...';
+        updateInfoEl.style.display = 'none';
+
+        const updateInfo = await invoke('check_for_updates');
+
+        if (updateInfo.available) {
+            statusEl.textContent = 'Update available!';
+            statusEl.style.color = 'var(--accent)';
+
+            // Show update info
+            document.getElementById('current-version').textContent = updateInfo.current_version;
+            document.getElementById('latest-version').textContent = updateInfo.latest_version;
+
+            const bodyEl = document.getElementById('update-body');
+            if (updateInfo.body) {
+                bodyEl.textContent = updateInfo.body;
+            } else {
+                bodyEl.textContent = 'No release notes available.';
+            }
+
+            updateInfoEl.style.display = 'block';
+        } else {
+            statusEl.textContent = `You're up to date! (v${updateInfo.current_version})`;
+            statusEl.style.color = 'var(--text-secondary)';
+            updateInfoEl.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Failed to check for updates:', error);
+        statusEl.textContent = 'Failed to check for updates';
+        statusEl.style.color = '#dc3545';
+        updateInfoEl.style.display = 'none';
+    } finally {
+        checkBtn.disabled = false;
+        checkBtn.textContent = 'Check for Updates';
+    }
+}
+
+async function installUpdate() {
+    const installBtn = document.getElementById('install-update-btn');
+    const statusEl = document.getElementById('update-status');
+
+    try {
+        installBtn.disabled = true;
+        installBtn.textContent = 'Downloading...';
+        statusEl.textContent = 'Downloading and installing update...';
+
+        await invoke('download_and_install_update');
+
+        statusEl.textContent = 'Update installed! Restart the app to apply.';
+        statusEl.style.color = '#28a745';
+        installBtn.textContent = 'Installed';
+
+        // Show restart prompt
+        setTimeout(() => {
+            const restart = confirm('Update installed successfully! Restart the application now?');
+            if (restart) {
+                invoke('quit_app');
+            }
+        }, 1000);
+    } catch (error) {
+        console.error('Failed to install update:', error);
+        statusEl.textContent = 'Failed to install update: ' + error;
+        statusEl.style.color = '#dc3545';
+        installBtn.disabled = false;
+        installBtn.textContent = 'Download & Install';
+    }
+}
+
+// Listen for update notifications from backend
+async function setupUpdateListener() {
+    const tauri = getTauriAPI();
+    if (tauri && tauri.event) {
+        await tauri.event.listen('update-available', (event) => {
+            console.log('Update available notification:', event.payload);
+            const statusEl = document.getElementById('update-status');
+            if (statusEl) {
+                statusEl.textContent = 'New update available!';
+                statusEl.style.color = 'var(--accent)';
+            }
+        });
+    }
+}
+
 // Save settings
 async function saveSettings() {
     stopRecording();
@@ -329,6 +421,20 @@ async function init() {
                 }
             }
         });
+
+        // Update buttons
+        const checkUpdatesBtn = document.getElementById('check-updates-btn');
+        if (checkUpdatesBtn) {
+            checkUpdatesBtn.addEventListener('click', checkForUpdates);
+        }
+
+        const installUpdateBtn = document.getElementById('install-update-btn');
+        if (installUpdateBtn) {
+            installUpdateBtn.addEventListener('click', installUpdate);
+        }
+
+        // Setup update listener
+        await setupUpdateListener();
 
         // Handle Escape key
         document.addEventListener('keydown', async (e) => {
