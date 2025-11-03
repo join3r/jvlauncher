@@ -1,6 +1,6 @@
 use crate::database::{App, DbPool, NewApp, Settings};
 use crate::{database, icon_extractor, icon_fetcher, launcher, terminal};
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 /// Get all apps from the database
 #[tauri::command]
@@ -35,22 +35,43 @@ pub fn create_app(
         None
     };
 
-    database::create_app(&pool, new_app, session_dir)
-        .map_err(|e| format!("Failed to create app: {}", e))
+    let app_id = database::create_app(&pool, new_app, session_dir)
+        .map_err(|e| format!("Failed to create app: {}", e))?;
+
+    // Emit event to notify main window that an app was created
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.emit("app-updated", ());
+    }
+
+    Ok(app_id)
 }
 
 /// Update an existing app
 #[tauri::command]
-pub fn update_app(pool: State<DbPool>, app: App) -> Result<(), String> {
+pub fn update_app(pool: State<DbPool>, app_handle: AppHandle, app: App) -> Result<(), String> {
     database::update_app(&pool, app)
-        .map_err(|e| format!("Failed to update app: {}", e))
+        .map_err(|e| format!("Failed to update app: {}", e))?;
+
+    // Emit event to notify main window that an app was updated
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.emit("app-updated", ());
+    }
+
+    Ok(())
 }
 
 /// Delete an app
 #[tauri::command]
-pub fn delete_app(pool: State<DbPool>, app_id: i64) -> Result<(), String> {
+pub fn delete_app(pool: State<DbPool>, app_handle: AppHandle, app_id: i64) -> Result<(), String> {
     database::delete_app(&pool, app_id)
-        .map_err(|e| format!("Failed to delete app: {}", e))
+        .map_err(|e| format!("Failed to delete app: {}", e))?;
+
+    // Emit event to notify main window that an app was deleted
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.emit("app-updated", ());
+    }
+
+    Ok(())
 }
 
 /// Reorder apps

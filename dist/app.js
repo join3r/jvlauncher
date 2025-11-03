@@ -262,6 +262,12 @@ async function init() {
                 await loadApps();
                 applyTheme();
             });
+
+            // Listen for app updates (create, update, delete)
+            tauri.event.listen('app-updated', async () => {
+                console.log('App updated, reloading apps...');
+                await loadApps();
+            });
         }
 
         console.log('App initialized successfully');
@@ -333,7 +339,9 @@ function renderApps() {
         if (app.icon_path) {
             const img = document.createElement('img');
             img.className = 'icon-image';
-            img.src = toAssetUrl(app.icon_path);
+            // Add cache-busting timestamp to force browser to reload updated icons
+            const cacheBuster = `?t=${Date.now()}`;
+            img.src = toAssetUrl(app.icon_path) + cacheBuster;
             img.alt = app.name;
             img.draggable = false; // Prevent image from interfering with drag
             item.appendChild(img);
@@ -791,10 +799,10 @@ function closeContextMenu() {
 // Delete app
 async function deleteApp(appId) {
     if (!confirm('Are you sure you want to delete this app?')) return;
-    
+
     try {
         await invoke('delete_app', { appId });
-        await loadApps();
+        // Apps will be reloaded automatically via the 'app-updated' event
     } catch (error) {
         console.error('Failed to delete app:', error);
         alert('Failed to delete app: ' + error);
@@ -1009,230 +1017,5 @@ async function showSettingsModal() {
     } catch (error) {
         console.error('Error in showSettingsModal:', error);
     }
-}
-
-// Create modal for add/edit
-function createModal(title, onSave, app = null) {
-    const isEdit = app !== null;
-    const appType = app?.app_type || 'app';
-    
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    
-    const content = document.createElement('div');
-    content.className = 'modal-content';
-    content.innerHTML = `
-        <h2>${title}</h2>
-        
-        <div class="form-group">
-            <label>Type</label>
-            <select id="app-type" ${isEdit ? 'disabled' : ''}>
-                <option value="app">Application</option>
-                <option value="webapp">Web Application</option>
-                <option value="tui">Terminal Application</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label>Name</label>
-            <input type="text" id="app-name" value="${app?.name || ''}" placeholder="Application name">
-        </div>
-        
-        <div class="form-group" id="url-group" style="display: none;">
-            <label>URL</label>
-            <input type="text" id="app-url" value="${app?.url || ''}" placeholder="https://example.com">
-        </div>
-        
-        <div class="form-group" id="binary-group">
-            <label>Binary Path</label>
-            <div class="input-with-button">
-                <input type="text" id="app-binary" value="${app?.binary_path || ''}" placeholder="/path/to/binary">
-                <button class="btn btn-primary" id="browse-binary-btn">Browse</button>
-            </div>
-        </div>
-        
-        <div class="form-group" id="params-group">
-            <label>Command Line Parameters</label>
-            <input type="text" id="app-params" value="${app?.cli_params || ''}" placeholder="--flag value">
-        </div>
-        
-        <div class="form-group">
-            <label>Icon</label>
-            <div class="input-with-button">
-                <button class="btn btn-primary" id="browse-icon-btn">Choose Icon</button>
-                <button class="btn btn-primary" id="paste-icon-btn">Paste Icon</button>
-            </div>
-            <div id="icon-preview" style="margin-top: 8px;"></div>
-        </div>
-        
-        <div class="form-group">
-            <label>Keyboard Shortcut</label>
-            <div class="input-with-button">
-                <input type="text" id="app-shortcut" value="${app?.shortcut || ''}" placeholder="CommandOrControl+1" readonly>
-                <button type="button" class="btn-record" id="record-app-shortcut-btn">Record</button>
-            </div>
-        </div>
-        
-        <div class="modal-actions">
-            <button class="btn btn-secondary" id="cancel-app-btn">Cancel</button>
-            <button class="btn btn-success" id="save-app-btn">Save</button>
-        </div>
-    `;
-    
-    overlay.appendChild(content);
-    
-    // App type change handler
-    const typeSelect = content.querySelector('#app-type');
-    typeSelect.value = appType;
-    
-    function updateFieldsVisibility() {
-        const type = typeSelect.value;
-        content.querySelector('#url-group').style.display = type === 'webapp' ? 'block' : 'none';
-        content.querySelector('#binary-group').style.display = type !== 'webapp' ? 'block' : 'none';
-        content.querySelector('#params-group').style.display = type !== 'webapp' ? 'block' : 'none';
-    }
-    
-    typeSelect.addEventListener('change', updateFieldsVisibility);
-    updateFieldsVisibility();
-    
-    // Icon preview
-    let iconPath = app?.icon_path || null;
-    function updateIconPreview() {
-        const preview = content.querySelector('#icon-preview');
-        if (iconPath) {
-            preview.innerHTML = `<img src="${toAssetUrl(iconPath)}" style="width: 48px; height: 48px; object-fit: contain;">`;
-        }
-    }
-    updateIconPreview();
-    
-    // Browse binary
-    content.querySelector('#browse-binary-btn').addEventListener('click', async () => {
-        try {
-            const selected = await openDialog({
-                multiple: false,
-                directory: false
-            });
-            if (selected) {
-                content.querySelector('#app-binary').value = selected;
-                
-                // Try to extract icon
-                try {
-                    iconPath = await invoke('extract_icon_from_binary', { binaryPath: selected });
-                    updateIconPreview();
-                } catch (e) {
-                    console.log('Could not extract icon:', e);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to open file dialog:', error);
-        }
-    });
-    
-    // Browse icon
-    content.querySelector('#browse-icon-btn').addEventListener('click', async () => {
-        try {
-            const selected = await openDialog({
-                multiple: false,
-                directory: false,
-                filters: [{
-                    name: 'Images',
-                    extensions: ['png', 'jpg', 'jpeg', 'svg', 'ico', 'icns']
-                }]
-            });
-            if (selected) {
-                const appName = content.querySelector('#app-name').value || 'app';
-                iconPath = await invoke('save_icon_from_file', {
-                    sourcePath: selected,
-                    appName: appName
-                });
-                updateIconPreview();
-            }
-        } catch (error) {
-            console.error('Failed to save icon:', error);
-        }
-    });
-
-    // Paste icon
-    content.querySelector('#paste-icon-btn').addEventListener('click', async () => {
-        try {
-            const appName = content.querySelector('#app-name').value || 'app';
-            iconPath = await invoke('paste_icon_from_clipboard', {
-                appName: appName
-            });
-            updateIconPreview();
-        } catch (error) {
-            console.error('Failed to paste icon from clipboard:', error);
-            alert('Failed to paste icon from clipboard. Make sure an image is in your clipboard.');
-        }
-    });
-
-    // Cancel button
-    content.querySelector('#cancel-app-btn').addEventListener('click', () => {
-        stopRecording();
-        overlay.remove();
-    });
-    
-    // Record shortcut button
-    const recordAppShortcutBtn = content.querySelector('#record-app-shortcut-btn');
-    const appShortcutInput = content.querySelector('#app-shortcut');
-    if (recordAppShortcutBtn && appShortcutInput) {
-        recordAppShortcutBtn.addEventListener('click', () => {
-            startRecording(appShortcutInput, recordAppShortcutBtn);
-        });
-    }
-    
-    // Save button
-    content.querySelector('#save-app-btn').addEventListener('click', async () => {
-        // Stop recording if active
-        stopRecording();
-        const formData = {
-            app_type: typeSelect.value,
-            name: content.querySelector('#app-name').value,
-            icon_path: iconPath,
-            shortcut: content.querySelector('#app-shortcut').value || null,
-            binary_path: content.querySelector('#app-binary').value || null,
-            cli_params: content.querySelector('#app-params').value || null,
-            url: content.querySelector('#app-url').value || null
-        };
-        
-        if (!formData.name) {
-            alert('Please enter an application name');
-            return;
-        }
-        
-        try {
-            await onSave(formData);
-            await loadApps();
-            overlay.remove();
-        } catch (error) {
-            console.error('Failed to save app:', error);
-            alert('Failed to save app: ' + error);
-        }
-    });
-    
-    // Close on overlay click
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            stopRecording();
-            overlay.remove();
-        }
-    });
-    
-    return overlay;
-}
-
-// Create app
-async function createApp(formData) {
-    await invoke('create_app', { newApp: formData });
-}
-
-// Update app
-async function updateApp(appId, formData) {
-    const updatedApp = {
-        id: appId,
-        ...formData,
-        position: apps.find(a => a.id === appId).position
-    };
-    await invoke('update_app', { app: updatedApp });
 }
 

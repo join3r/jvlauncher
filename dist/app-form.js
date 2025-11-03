@@ -254,7 +254,9 @@ function handleRecordingKeyDown(event) {
 function updateIconPreview() {
     const preview = document.getElementById('icon-preview');
     if (iconPath) {
-        preview.innerHTML = `<img src="${toAssetUrl(iconPath)}">`;
+        // Add cache-busting timestamp to force browser to reload the image
+        const cacheBuster = `?t=${Date.now()}`;
+        preview.innerHTML = `<img src="${toAssetUrl(iconPath)}${cacheBuster}">`;
     } else {
         preview.innerHTML = '';
     }
