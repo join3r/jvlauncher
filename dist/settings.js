@@ -180,6 +180,47 @@ function formatShortcut(event) {
     return parts.join('+');
 }
 
+// Format shortcut for display with platform-specific symbols
+function formatShortcutDisplay(shortcut) {
+    if (!shortcut) return '';
+
+    // On macOS, use symbols; on other platforms, use text
+    if (isMacOS) {
+        // Check if this is a Hyper key combination (Command+Control+Alt+Shift)
+        const hasCommand = shortcut.includes('Command');
+        const hasControl = shortcut.includes('Control');
+        const hasAlt = shortcut.includes('Alt');
+        const hasShift = shortcut.includes('Shift');
+
+        // If all four modifiers are present, use the Hyper key symbol
+        if (hasCommand && hasControl && hasAlt && hasShift) {
+            // Replace all four modifiers with the Hyper symbol
+            let result = shortcut
+                .replace(/Command\+/g, '')
+                .replace(/Control\+/g, '')
+                .replace(/Alt\+/g, '')
+                .replace(/Shift\+/g, '');
+            return '✦' + result;
+        }
+
+        // Otherwise, replace individual modifiers with their symbols
+        return shortcut
+            .replace(/CommandOrControl/g, '⌘')
+            .replace(/Command/g, '⌘')
+            .replace(/Control/g, '⌃')
+            .replace(/Alt/g, '⌥')
+            .replace(/Shift/g, '⇧');
+    } else {
+        // On Windows/Linux, convert to more readable text
+        return shortcut
+            .replace(/CommandOrControl/g, 'Ctrl')
+            .replace(/Command/g, 'Cmd')
+            .replace(/Control/g, 'Ctrl')
+            .replace(/Alt/g, 'Alt')
+            .replace(/Shift/g, 'Shift');
+    }
+}
+
 // Start recording shortcut
 function startRecording(input, button) {
     if (isRecording) {
@@ -226,7 +267,9 @@ function handleRecordingKeyDown(event) {
     if (key && key !== 'Control' && key !== 'Meta' && key !== 'Alt' && key !== 'Shift') {
         const shortcut = formatShortcut(event);
         if (shortcut) {
-            currentRecordingInput.value = shortcut;
+            // Store raw value and display formatted version
+            currentRecordingInput.dataset.rawValue = shortcut;
+            currentRecordingInput.value = formatShortcutDisplay(shortcut);
             stopRecording();
         }
     }
@@ -256,7 +299,13 @@ async function loadSettings() {
         setThemeSegment(settings.theme || 'system');
         document.getElementById('settings-grid-cols').value = settings.grid_cols || 4;
         document.getElementById('settings-grid-rows').value = settings.grid_rows || 3;
-        document.getElementById('settings-shortcut').value = settings.global_shortcut || 'CommandOrControl+Shift+Space';
+
+        // Store raw shortcut value and display formatted version
+        const shortcutInput = document.getElementById('settings-shortcut');
+        const rawShortcut = settings.global_shortcut || 'CommandOrControl+Shift+Space';
+        shortcutInput.dataset.rawValue = rawShortcut;
+        shortcutInput.value = formatShortcutDisplay(rawShortcut);
+
         document.getElementById('settings-start-login').checked = settings.start_at_login || false;
 
         // Apply the theme to this window
@@ -383,11 +432,12 @@ async function setupUpdateListener() {
 async function saveSettings() {
     stopRecording();
 
+    const shortcutInput = document.getElementById('settings-shortcut');
     const newSettings = {
         theme: getThemeFromSegment(),
         grid_cols: parseInt(document.getElementById('settings-grid-cols').value),
         grid_rows: parseInt(document.getElementById('settings-grid-rows').value),
-        global_shortcut: document.getElementById('settings-shortcut').value,
+        global_shortcut: shortcutInput.dataset.rawValue || shortcutInput.value,
         start_at_login: document.getElementById('settings-start-login').checked
     };
 

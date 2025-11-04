@@ -246,6 +246,47 @@ function formatShortcut(event) {
     return parts.join('+');
 }
 
+// Format shortcut for display with platform-specific symbols
+function formatShortcutDisplay(shortcut) {
+    if (!shortcut) return '';
+
+    // On macOS, use symbols; on other platforms, use text
+    if (isMacOS) {
+        // Check if this is a Hyper key combination (Command+Control+Alt+Shift)
+        const hasCommand = shortcut.includes('Command');
+        const hasControl = shortcut.includes('Control');
+        const hasAlt = shortcut.includes('Alt');
+        const hasShift = shortcut.includes('Shift');
+
+        // If all four modifiers are present, use the Hyper key symbol
+        if (hasCommand && hasControl && hasAlt && hasShift) {
+            // Replace all four modifiers with the Hyper symbol
+            let result = shortcut
+                .replace(/Command\+/g, '')
+                .replace(/Control\+/g, '')
+                .replace(/Alt\+/g, '')
+                .replace(/Shift\+/g, '');
+            return '✦' + result;
+        }
+
+        // Otherwise, replace individual modifiers with their symbols
+        return shortcut
+            .replace(/CommandOrControl/g, '⌘')
+            .replace(/Command/g, '⌘')
+            .replace(/Control/g, '⌃')
+            .replace(/Alt/g, '⌥')
+            .replace(/Shift/g, '⇧');
+    } else {
+        // On Windows/Linux, convert to more readable text
+        return shortcut
+            .replace(/CommandOrControl/g, 'Ctrl')
+            .replace(/Command/g, 'Cmd')
+            .replace(/Control/g, 'Ctrl')
+            .replace(/Alt/g, 'Alt')
+            .replace(/Shift/g, 'Shift');
+    }
+}
+
 // Start recording shortcut
 function startRecording(input, button) {
     if (isRecording) {
@@ -292,7 +333,9 @@ function handleRecordingKeyDown(event) {
     if (key && key !== 'Control' && key !== 'Meta' && key !== 'Alt' && key !== 'Shift') {
         const shortcut = formatShortcut(event);
         if (shortcut) {
-            currentRecordingInput.value = shortcut;
+            // Store raw value and display formatted version
+            currentRecordingInput.dataset.rawValue = shortcut;
+            currentRecordingInput.value = formatShortcutDisplay(shortcut);
             stopRecording();
         }
     }
@@ -421,8 +464,17 @@ async function loadAppData() {
                 document.getElementById('app-url').value = appData.url || '';
                 document.getElementById('app-binary').value = appData.binary_path || '';
                 document.getElementById('app-params').value = appData.cli_params || '';
-                document.getElementById('app-shortcut').value = appData.shortcut || '';
-                document.getElementById('app-global-shortcut').value = appData.global_shortcut || '';
+
+                // Store raw shortcut values and display formatted versions
+                const shortcutInput = document.getElementById('app-shortcut');
+                const rawShortcut = appData.shortcut || '';
+                shortcutInput.dataset.rawValue = rawShortcut;
+                shortcutInput.value = formatShortcutDisplay(rawShortcut);
+
+                const globalShortcutInput = document.getElementById('app-global-shortcut');
+                const rawGlobalShortcut = appData.global_shortcut || '';
+                globalShortcutInput.dataset.rawValue = rawGlobalShortcut;
+                globalShortcutInput.value = formatShortcutDisplay(rawGlobalShortcut);
                 iconPath = appData.icon_path || null;
                 // If app already has an icon, treat it as user-selected to prevent overwriting
                 if (iconPath) {
@@ -500,8 +552,13 @@ async function saveApp() {
     const url = document.getElementById('app-url').value.trim();
     const binaryPath = document.getElementById('app-binary').value.trim();
     const cliParams = document.getElementById('app-params').value.trim();
-    const shortcut = document.getElementById('app-shortcut').value.trim();
-    const globalShortcut = document.getElementById('app-global-shortcut').value.trim();
+
+    // Get raw shortcut values (not the formatted display values)
+    const shortcutInput = document.getElementById('app-shortcut');
+    const shortcut = (shortcutInput.dataset.rawValue || shortcutInput.value).trim();
+
+    const globalShortcutInput = document.getElementById('app-global-shortcut');
+    const globalShortcut = (globalShortcutInput.dataset.rawValue || globalShortcutInput.value).trim();
 
     if (!name) {
         alert('Please enter an application name');
@@ -804,6 +861,7 @@ async function init() {
         if (clearBtn && shortcutInput) {
             clearBtn.addEventListener('click', () => {
                 shortcutInput.value = '';
+                shortcutInput.dataset.rawValue = '';
             });
         }
 
@@ -821,6 +879,7 @@ async function init() {
         if (clearGlobalBtn && globalShortcutInput) {
             clearGlobalBtn.addEventListener('click', () => {
                 globalShortcutInput.value = '';
+                globalShortcutInput.dataset.rawValue = '';
             });
         }
 

@@ -464,20 +464,21 @@ body {
 /* Shortcuts container - holds both regular and global shortcuts */
 .icon-item .app-shortcuts-container {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 4px;
-    justify-content: center;
+    align-items: center;
     margin-top: 4px;
 }
 
 .icon-item .app-shortcut {
     font-size: 10px;
-    color: var(--text-secondary);
-    background: var(--bg-tertiary);
+    color: #ffffff;
+    background: linear-gradient(135deg, #007aff 0%, #5ac8fa 100%);
     padding: 2px 6px;
     border-radius: 3px;
     display: inline-block;
-    font-weight: 400;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 122, 255, 0.3);
 }
 
 /* Global shortcut - gold/yellow background to indicate system-wide functionality */
@@ -486,6 +487,19 @@ body {
     color: #1d1d1f;
     font-weight: 500;
     box-shadow: 0 1px 3px rgba(255, 215, 0, 0.3);
+}
+
+/* Dark mode adjustments for normal shortcut */
+:root[data-theme="dark"] .icon-item .app-shortcut {
+    background: linear-gradient(135deg, #0a84ff 0%, #64d2ff 100%);
+    color: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .icon-item .app-shortcut {
+        background: linear-gradient(135deg, #0a84ff 0%, #64d2ff 100%);
+        color: #ffffff;
+    }
 }
 
 /* Dark mode adjustments for global shortcut */
@@ -501,17 +515,31 @@ body {
     }
 }
 
-/* macOS Native Shortcut - No Background, Lighter Color */
+/* macOS Native Shortcut - Blue Background */
 .platform-macos .icon-item .app-shortcut {
     font-size: 10px;
     padding: 2px 6px;
-    background: var(--shortcut-bg);
+    background: linear-gradient(135deg, #007aff 0%, #5ac8fa 100%);
     border: none;
     border-radius: 8px;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: 0.01em;
-    color: var(--shortcut-color);
+    color: #ffffff;
     margin-top: 2px;
+    box-shadow: 0 1px 3px rgba(0, 122, 255, 0.3);
+}
+
+/* Dark mode for macOS normal shortcut */
+.platform-macos:root[data-theme="dark"] .icon-item .app-shortcut {
+    background: linear-gradient(135deg, #0a84ff 0%, #64d2ff 100%);
+    color: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+    .platform-macos:root:not([data-theme]) .icon-item .app-shortcut {
+        background: linear-gradient(135deg, #0a84ff 0%, #64d2ff 100%);
+        color: #ffffff;
+    }
 }
 
 /* macOS Native Global Shortcut - Gold background */

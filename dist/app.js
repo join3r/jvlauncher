@@ -169,6 +169,47 @@ function formatShortcut(event) {
     return parts.length > 0 ? parts.join('+') : '';
 }
 
+// Format shortcut for display with platform-specific symbols
+function formatShortcutDisplay(shortcut) {
+    if (!shortcut) return '';
+
+    // On macOS, use symbols; on other platforms, use text
+    if (isMacOS) {
+        // Check if this is a Hyper key combination (Command+Control+Alt+Shift)
+        const hasCommand = shortcut.includes('Command');
+        const hasControl = shortcut.includes('Control');
+        const hasAlt = shortcut.includes('Alt');
+        const hasShift = shortcut.includes('Shift');
+
+        // If all four modifiers are present, use the Hyper key symbol
+        if (hasCommand && hasControl && hasAlt && hasShift) {
+            // Replace all four modifiers with the Hyper symbol
+            let result = shortcut
+                .replace(/Command\+/g, '')
+                .replace(/Control\+/g, '')
+                .replace(/Alt\+/g, '')
+                .replace(/Shift\+/g, '');
+            return '✦' + result;
+        }
+
+        // Otherwise, replace individual modifiers with their symbols
+        return shortcut
+            .replace(/CommandOrControl/g, '⌘')
+            .replace(/Command/g, '⌘')
+            .replace(/Control/g, '⌃')
+            .replace(/Alt/g, '⌥')
+            .replace(/Shift/g, '⇧');
+    } else {
+        // On Windows/Linux, convert to more readable text
+        return shortcut
+            .replace(/CommandOrControl/g, 'Ctrl')
+            .replace(/Command/g, 'Cmd')
+            .replace(/Control/g, 'Ctrl')
+            .replace(/Alt/g, 'Alt')
+            .replace(/Shift/g, 'Shift');
+    }
+}
+
 // Start recording a shortcut
 function startRecording(inputElement, buttonElement) {
     // Stop any existing recording
@@ -366,23 +407,23 @@ function renderApps() {
             shortcutsContainer.className = 'app-shortcuts-container';
             shortcutsContainer.draggable = false;
 
-            // Regular shortcut
-            if (app.shortcut) {
-                const shortcut = document.createElement('div');
-                shortcut.className = 'app-shortcut';
-                shortcut.textContent = app.shortcut;
-                shortcut.draggable = false;
-                shortcutsContainer.appendChild(shortcut);
-            }
-
-            // Global shortcut (with gold background)
+            // Global shortcut (with gold background) - displayed FIRST
             if (app.global_shortcut) {
                 const globalShortcut = document.createElement('div');
                 globalShortcut.className = 'app-shortcut app-shortcut-global';
-                globalShortcut.textContent = app.global_shortcut;
+                globalShortcut.textContent = formatShortcutDisplay(app.global_shortcut);
                 globalShortcut.title = 'Global shortcut (works system-wide)';
                 globalShortcut.draggable = false;
                 shortcutsContainer.appendChild(globalShortcut);
+            }
+
+            // Regular shortcut - displayed SECOND
+            if (app.shortcut) {
+                const shortcut = document.createElement('div');
+                shortcut.className = 'app-shortcut';
+                shortcut.textContent = formatShortcutDisplay(app.shortcut);
+                shortcut.draggable = false;
+                shortcutsContainer.appendChild(shortcut);
             }
 
             item.appendChild(shortcutsContainer);
