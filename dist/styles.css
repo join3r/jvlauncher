@@ -138,7 +138,6 @@ body {
     display: flex;
     flex-direction: column;
     position: relative;
-    position: relative;
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -151,7 +150,7 @@ body {
 .platform-macos .app-container {
     background: var(--bg-primary);
     border: none; /* Remove border for cleaner look */
-    border-radius: 22px;
+    border-radius: 12px; /* Match native window effect radius */
     -webkit-backdrop-filter: saturate(180%) blur(var(--blur-amount));
     backdrop-filter: saturate(180%) blur(var(--blur-amount));
     box-shadow:
