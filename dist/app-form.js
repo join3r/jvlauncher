@@ -364,9 +364,29 @@ async function fetchWebIcon(url) {
 // Update field visibility based on app type
 function updateFieldsVisibility() {
     const type = getTypeFromSegment();
-    document.getElementById('url-group').style.display = type === 'webapp' ? 'block' : 'none';
-    document.getElementById('binary-group').style.display = type !== 'webapp' ? 'block' : 'none';
-    document.getElementById('params-group').style.display = type !== 'webapp' ? 'block' : 'none';
+    // Show/hide both label and control for each field
+    const urlLabel = document.getElementById('url-label');
+    const urlGroup = document.getElementById('url-group');
+    const binaryLabel = document.getElementById('binary-label');
+    const binaryGroup = document.getElementById('binary-group');
+    const paramsLabel = document.getElementById('params-label');
+    const paramsGroup = document.getElementById('params-group');
+
+    if (type === 'webapp') {
+        urlLabel.style.display = 'block';
+        urlGroup.style.display = 'flex';
+        binaryLabel.style.display = 'none';
+        binaryGroup.style.display = 'none';
+        paramsLabel.style.display = 'none';
+        paramsGroup.style.display = 'none';
+    } else {
+        urlLabel.style.display = 'none';
+        urlGroup.style.display = 'none';
+        binaryLabel.style.display = 'block';
+        binaryGroup.style.display = 'flex';
+        paramsLabel.style.display = 'block';
+        paramsGroup.style.display = 'flex';
+    }
 
     // Auto-resize window when field visibility changes
     // Use requestAnimationFrame to ensure DOM has updated

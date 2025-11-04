@@ -24,72 +24,78 @@
         .settings-container {
             max-width: 580px;
             margin: 0 auto;
-            padding: 18px 18px;
+            padding: 16px 20px;
         }
         h2 {
             margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 22px;
-            font-weight: 700;
+            margin-bottom: 16px;
+            font-size: 13px;
+            font-weight: 600;
             text-align: center;
         }
         /* Rowed layout */
-        .settings-rows { display: grid; grid-template-columns: 160px 1fr; row-gap: 10px; column-gap: 10px; align-items: center; }
-        .row-label { font-weight: 500; font-size: 15px; }
-        .row-control { display: flex; gap: 12px; align-items: center; }
+        .settings-rows { display: grid; grid-template-columns: 140px 1fr; row-gap: 12px; column-gap: 12px; align-items: center; }
+        .row-label { font-weight: 400; font-size: 13px; text-align: right; }
+        .row-control { display: flex; gap: 8px; align-items: center; }
         .row-control input[type="number"],
         .row-control input[type="text"],
         .row-control select {
             width: 100%;
-            padding: 8px 10px;
+            padding: 3px 6px;
             border: 0.5px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: 5px;
+            font-size: 13px;
             background: var(--bg-tertiary);
             color: var(--text-primary);
+            height: 22px;
+            line-height: 1.2;
         }
         .row-control input:focus, .row-control select:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
         }
         /* Segmented control */
-        .segmented { display: inline-flex; padding: 3px; background: var(--bg-tertiary); border-radius: 10px; border: 0.5px solid var(--border-color); }
-        .segmented button { appearance: none; border: none; background: transparent; padding: 6px 14px; font-size: 14px; color: var(--text-primary); border-radius: 8px; cursor: pointer; transition: background 0.15s, color 0.15s; }
-        .segmented button.is-active { background: var(--accent); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .segmented { display: inline-flex; padding: 2px; background: var(--bg-tertiary); border-radius: 6px; border: 0.5px solid var(--border-color); }
+        .segmented button { appearance: none; border: none; background: transparent; padding: 3px 12px; font-size: 13px; color: var(--text-primary); border-radius: 4px; cursor: pointer; transition: background 0.15s, color 0.15s; font-weight: 400; }
+        .segmented button.is-active { background: var(--accent); color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
         /* Record button */
-        .settings-container .btn-record { padding: 8px 14px; border: 0.5px solid var(--border-color) !important; border-radius: 8px; font-size: 14px; background: var(--bg-secondary) !important; color: var(--text-primary) !important; cursor: pointer; }
+        .settings-container .btn-record { padding: 3px 12px; border: 0.5px solid var(--border-color) !important; border-radius: 5px; font-size: 13px; background: var(--bg-secondary) !important; color: var(--text-primary) !important; cursor: pointer; font-weight: 400; height: 22px; line-height: 1.2; }
         .settings-container .btn-record:hover { background: var(--bg-tertiary) !important; }
         .btn-record.recording { background: #ff3b30; color: #fff; border-color: #ff3b30; }
         .shortcut-input { flex: 1; }
-        /* Larger checkbox */
-        .row-control input[type="checkbox"] { transform: scale(1.25); accent-color: var(--accent); }
+        /* Native checkbox size */
+        .row-control input[type="checkbox"] { accent-color: var(--accent); }
         /* Bottom actions */
-        .actions-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-color); }
-        .actions-right { display: flex; gap: 12px; }
-        .settings-container .btn { padding: 8px 18px; border: 0.5px solid var(--border-color); border-radius: 10px; font-size: 14px; cursor: pointer; }
+        .actions-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); }
+        .actions-right { display: flex; gap: 8px; }
+        .settings-container .btn { padding: 4px 14px; border: 0.5px solid var(--border-color); border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 400; height: 24px; line-height: 1.2; }
         .settings-container .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
         .settings-container .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); }
         .settings-container .btn-danger { background: var(--accent); color: #fff; border-color: var(--accent); }
         .settings-container .btn-primary:hover { filter: brightness(0.95); }
         .settings-container .btn-secondary:hover { background: var(--bg-tertiary); }
         .btn-record {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
+            padding: 3px 12px;
+            border: 0.5px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 400;
             cursor: pointer;
-            transition: all 0.2s;
-            background: #6c757d;
-            color: white;
+            transition: all 0.15s;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             white-space: nowrap;
+            height: 22px;
+            line-height: 1.2;
         }
         .btn-record:hover {
-            background: #5a6268;
+            background: var(--bg-tertiary);
         }
         .btn-record.recording {
             background: #dc3545;
+            color: white;
+            border-color: #dc3545;
             animation: pulse 1s infinite;
         }
         @keyframes pulse {
@@ -100,53 +106,59 @@
             display: flex;
             align-items: center;
             cursor: pointer;
+            font-size: 13px;
         }
         .checkbox-label input {
-            margin-right: 8px;
+            margin-right: 6px;
             width: auto;
         }
         .btn {
-            padding: 10px 20px;
-            border: none;
+            padding: 4px 14px;
+            border: 0.5px solid var(--border-color);
             border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 400;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s;
+            height: 24px;
+            line-height: 1.2;
         }
         .btn-primary {
             background: var(--accent);
             color: white;
+            border-color: var(--accent);
         }
         .btn-primary:hover {
-            background: #1677ff;
+            filter: brightness(0.95);
         }
         .btn-success {
             background: #28a745;
             color: white;
+            border-color: #28a745;
         }
         .btn-success:hover {
             background: #218838;
         }
         .btn-secondary {
-            background: #6c757d;
-            color: white;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
         }
         .btn-secondary:hover {
-            background: #5a6268;
+            background: var(--bg-tertiary);
         }
         .btn-danger {
             background: #dc3545;
             color: white;
+            border-color: #dc3545;
         }
         .btn-danger:hover {
             background: #c82333;
         }
         .modal-actions {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             justify-content: flex-end;
-            margin-top: 24px;
+            margin-top: 16px;
         }
     </style>
 </head>
@@ -163,14 +175,14 @@
             </div>
 
             <div class="row-label">Grid</div>
-            <div class="row-control" style="gap:12px; flex-direction: column; align-items: flex-start;">
+            <div class="row-control" style="gap:8px; flex-direction: column; align-items: flex-start;">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="opacity:.9;">Grid Columns in X-axis</span>
-                    <input type="number" id="settings-grid-cols" min="2" max="10" style="width:80px;">
+                    <span style="opacity:.85; font-size: 13px;">Grid Columns in X-axis</span>
+                    <input type="number" id="settings-grid-cols" min="2" max="10" style="width:60px;">
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="opacity:.9;">Grid Columns in Y-axis</span>
-                    <input type="number" id="settings-grid-rows" min="2" max="10" style="width:80px;">
+                    <span style="opacity:.85; font-size: 13px;">Grid Columns in Y-axis</span>
+                    <input type="number" id="settings-grid-rows" min="2" max="10" style="width:60px;">
                 </div>
             </div>
 
@@ -190,19 +202,19 @@
 
             <div class="row-label">Updates</div>
             <div class="row-control" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
                     <button type="button" class="btn btn-primary" id="check-updates-btn">Check for Updates</button>
-                    <span id="update-status" style="font-size: 13px; opacity: 0.8;"></span>
+                    <span id="update-status" style="font-size: 11px; opacity: 0.75;"></span>
                 </div>
-                <div id="update-info" style="display: none; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; width: 100%; box-sizing: border-box;">
-                    <div style="font-weight: 600; margin-bottom: 8px;">Update Available!</div>
-                    <div style="font-size: 13px; opacity: 0.9; margin-bottom: 4px;">
+                <div id="update-info" style="display: none; padding: 10px; background: var(--bg-tertiary); border-radius: 6px; width: 100%; box-sizing: border-box;">
+                    <div style="font-weight: 600; margin-bottom: 6px; font-size: 13px;">Update Available!</div>
+                    <div style="font-size: 11px; opacity: 0.85; margin-bottom: 3px;">
                         <strong>Current:</strong> <span id="current-version"></span>
                     </div>
-                    <div style="font-size: 13px; opacity: 0.9; margin-bottom: 12px;">
+                    <div style="font-size: 11px; opacity: 0.85; margin-bottom: 8px;">
                         <strong>Latest:</strong> <span id="latest-version"></span>
                     </div>
-                    <div id="update-body" style="font-size: 13px; opacity: 0.8; margin-bottom: 12px; max-height: 100px; overflow-y: auto;"></div>
+                    <div id="update-body" style="font-size: 11px; opacity: 0.75; margin-bottom: 8px; max-height: 80px; overflow-y: auto;"></div>
                     <button type="button" class="btn btn-success" id="install-update-btn">Download & Install</button>
                 </div>
             </div>

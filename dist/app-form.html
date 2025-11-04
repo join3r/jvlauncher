@@ -21,35 +21,65 @@
             :root:not([data-theme]) body { background: #2c2c2e !important; }
         }
         .app-form-container {
-            max-width: 520px;
+            max-width: 580px;
             margin: 0 auto;
-            padding: 18px 18px 16px 18px;
+            padding: 16px 20px;
+        }
+        /* Two-column grid layout for form rows */
+        .form-rows {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            row-gap: 12px;
+            column-gap: 12px;
+            align-items: start;
+        }
+        .form-label {
+            font-weight: 400;
+            font-size: 13px;
+            text-align: right;
+            padding-top: 3px; /* Align with input text */
+        }
+        .form-control {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
         }
         /* Segmented control (same style as Settings) */
-        .segmented { display: inline-flex; padding: 3px; background: var(--bg-tertiary); border-radius: 10px; border: 0.5px solid var(--border-color); }
-        .segmented button { appearance: none; border: none; background: transparent; padding: 6px 14px; font-size: 14px; color: var(--text-primary); border-radius: 8px; cursor: pointer; transition: background 0.15s, color 0.15s; }
-        .segmented button.is-active { background: var(--accent); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .segmented { display: inline-flex; padding: 2px; background: var(--bg-tertiary); border-radius: 6px; border: 0.5px solid var(--border-color); }
+        .segmented button { appearance: none; border: none; background: transparent; padding: 3px 12px; font-size: 13px; color: var(--text-primary); border-radius: 4px; cursor: pointer; transition: background 0.15s, color 0.15s; font-weight: 400; }
+        .segmented button.is-active { background: var(--accent); color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
         .segmented button[disabled] { opacity: .6; cursor: default; }
-        .form-group { margin-bottom: 14px; }
+        /* Legacy form-group for backwards compatibility */
+        .form-group { margin-bottom: 12px; }
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            font-size: 14px;
+            margin-bottom: 6px;
+            font-weight: 400;
+            font-size: 13px;
         }
+        .form-control input,
+        .form-control select,
         .form-group input,
         .form-group select {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 14px;
+            padding: 3px 6px;
+            border: 0.5px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 13px;
             background: var(--bg-tertiary);
             color: var(--text-primary);
-            transition: all 0.2s;
+            transition: all 0.15s;
             box-sizing: border-box;
+            height: 22px;
+            line-height: 1.2;
+        }
+        .form-control input[readonly] {
+            flex: 1;
         }
         /* Override global macOS glass inputs so dark mode looks correct */
+        .platform-macos .form-control input,
+        .platform-macos .form-control select,
         .platform-macos .form-group input,
         .platform-macos .form-group select {
             background: var(--bg-tertiary) !important;
@@ -59,71 +89,81 @@
             box-shadow: none !important;
             color: var(--text-primary) !important;
         }
-        .form-group input::placeholder { color: color-mix(in srgb, var(--text-secondary) 85%, transparent); }
+        .form-control input::placeholder,
+        .form-group input::placeholder { color: color-mix(in srgb, var(--text-secondary) 85%, transparent); font-size: 13px; }
+        :root[data-theme="dark"] .form-control input::placeholder,
         :root[data-theme="dark"] .form-group input::placeholder { color: color-mix(in srgb, var(--text-secondary) 95%, transparent); }
+        .form-control input:focus,
+        .form-control select:focus,
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
         }
         .input-with-button {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
         .input-with-button input {
             flex: 1;
         }
         .btn {
-            padding: 10px 20px;
-            border: none;
+            padding: 4px 14px;
+            border: 0.5px solid var(--border-color);
             border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 400;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s;
             white-space: nowrap;
+            height: 24px;
+            line-height: 1.2;
         }
         .btn-primary {
             background: var(--accent);
             color: white;
+            border-color: var(--accent);
         }
         .btn-primary:hover {
-            background: #1677ff;
+            filter: brightness(0.95);
         }
         .btn-success {
             background: #28a745;
             color: white;
+            border-color: #28a745;
         }
         .btn-success:hover {
             background: #218838;
         }
         .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 0.5px solid var(--border-color); }
         .btn-secondary:hover { background: var(--bg-tertiary); }
-        .btn-record { padding: 8px 14px; border: 0.5px solid var(--border-color) !important; border-radius: 8px; font-size: 14px; background: var(--bg-secondary) !important; color: var(--text-primary) !important; cursor: pointer; white-space: nowrap; }
+        .btn-record { padding: 3px 12px; border: 0.5px solid var(--border-color) !important; border-radius: 5px; font-size: 13px; background: var(--bg-secondary) !important; color: var(--text-primary) !important; cursor: pointer; white-space: nowrap; font-weight: 400; height: 22px; line-height: 1.2; }
         .btn-record:hover { background: var(--bg-tertiary) !important; }
         .btn-record.recording {
             background: #dc3545;
+            color: white;
+            border-color: #dc3545;
             animation: pulse 1s infinite;
         }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
-        .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
         #icon-preview {
-            margin-top: 8px;
+            margin-top: 6px;
         }
         #icon-preview img {
-            width: 48px;
-            height: 48px;
+            width: 40px;
+            height: 40px;
             object-fit: contain;
         }
         .icon-tip {
-            margin-top: 8px;
+            margin-top: 6px;
             font-size: 11px;
             color: var(--text-secondary);
-            opacity: 0.85;
+            opacity: 0.75;
         }
         .icon-tip a {
             color: var(--accent);
@@ -137,58 +177,56 @@
 </head>
 <body>
     <div class="app-form-container">
-        <h2 id="form-title" style="display:none;">Add Application</h2>
-        
-        <div class="form-group">
-            <label>Type</label>
-            <div class="segmented" id="type-segment">
-                <button data-value="app">Application</button>
-                <button data-value="webapp">Web Application</button>
-                <button data-value="tui">Terminal Application</button>
+        <h2 id="form-title" style="display:none; font-size: 13px; font-weight: 600; margin-bottom: 12px;">Add Application</h2>
+
+        <div class="form-rows">
+            <div class="form-label">Type</div>
+            <div class="form-control">
+                <div class="segmented" id="type-segment">
+                    <button data-value="app">Application</button>
+                    <button data-value="webapp">Web Application</button>
+                    <button data-value="tui">Terminal Application</button>
+                </div>
             </div>
-        </div>
-        
-        <div class="form-group">
-            <label>Name</label>
-            <input type="text" id="app-name" placeholder="Application name">
-        </div>
-        
-        <div class="form-group" id="url-group" style="display: none;">
-            <label>URL</label>
-            <input type="text" id="app-url" placeholder="https://example.com">
-        </div>
-        
-        <div class="form-group" id="binary-group">
-            <label>Binary Path</label>
-            <div class="input-with-button">
-                <input type="text" id="app-binary" placeholder="/path/to/binary">
+
+            <div class="form-label">Name</div>
+            <div class="form-control">
+                <input type="text" id="app-name" placeholder="Application name">
+            </div>
+
+            <div class="form-label" id="url-label" style="display: none;">URL</div>
+            <div class="form-control" id="url-group" style="display: none;">
+                <input type="text" id="app-url" placeholder="https://example.com">
+            </div>
+
+            <div class="form-label" id="binary-label">Binary Path</div>
+            <div class="form-control" id="binary-group">
+                <input type="text" id="app-binary" placeholder="/path/to/binary" style="flex: 1;">
                 <button class="btn btn-primary" id="browse-binary-btn">Browse</button>
             </div>
-        </div>
-        
-        <div class="form-group" id="params-group">
-            <label>Command Line Parameters</label>
-            <input type="text" id="app-params" placeholder="--flag value">
-        </div>
-        
-        <div class="form-group">
-            <label>Icon</label>
-            <div class="input-with-button">
-                <button class="btn btn-primary" id="browse-icon-btn">Choose Icon</button>
-                <button class="btn btn-primary" id="paste-icon-btn">Paste Icon</button>
+
+            <div class="form-label" id="params-label">CLI Parameters</div>
+            <div class="form-control" id="params-group">
+                <input type="text" id="app-params" placeholder="--flag value">
             </div>
-            <div class="icon-tip">Tip: Copy PNG icons from <a id="dashboardicons-link">dashboardicons.com</a></div>
-            <div id="icon-preview"></div>
-        </div>
-        
-        <div class="form-group">
-            <label>Keyboard Shortcut</label>
-            <div class="input-with-button">
-                <input type="text" id="app-shortcut" placeholder="CommandOrControl+1" readonly>
+
+            <div class="form-label">Icon</div>
+            <div class="form-control" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn btn-primary" id="browse-icon-btn">Choose Icon</button>
+                    <button class="btn btn-primary" id="paste-icon-btn">Paste Icon</button>
+                </div>
+                <div class="icon-tip">Tip: Copy PNG icons from <a id="dashboardicons-link">dashboardicons.com</a></div>
+                <div id="icon-preview"></div>
+            </div>
+
+            <div class="form-label">Shortcut</div>
+            <div class="form-control">
+                <input type="text" id="app-shortcut" placeholder="CommandOrControl+1" readonly style="flex: 1;">
                 <button type="button" class="btn-record" id="record-app-shortcut-btn">Record</button>
             </div>
         </div>
-        
+
         <div class="modal-actions">
             <button class="btn btn-secondary" id="cancel-app-btn">Cancel</button>
             <button class="btn btn-success" id="save-app-btn">Save</button>
