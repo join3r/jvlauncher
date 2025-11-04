@@ -178,8 +178,8 @@ body {
 }
 
 .floating-button {
-    width: 32px;
-    height: 32px;
+    padding: 4px 14px;
+    height: 24px;
     border-radius: 6px;
     background: var(--bg-secondary);
     border: 0.5px solid var(--border-color);
@@ -187,26 +187,27 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    font-weight: 300;
+    font-size: 13px;
+    font-weight: 400;
     transition: all 0.15s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
-/* macOS Native Floating Buttons - Circular and Larger */
+/* macOS Native Floating Buttons - Text-based */
 .platform-macos .floating-button {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.65);
-    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    padding: 4px 14px;
+    height: 24px;
+    border-radius: 6px;
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.75));
+    border: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.1));
     -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.08),
-        0 0 0 0.5px rgba(255, 255, 255, 0.3) inset;
-    color: rgba(0, 0, 0, 0.5);
-    font-size: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    color: var(--text-primary, #1d1d1f);
+    font-size: 13px;
+    font-weight: 400;
 }
 
 .fab-left {
@@ -222,34 +223,34 @@ body {
 }
 
 .platform-macos .floating-button:hover {
-    background: rgba(255, 255, 255, 0.80);
-    transform: scale(1.05);
-    box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.12),
-        0 0 0 0.5px rgba(255, 255, 255, 0.4) inset;
+    background: var(--bg-tertiary, rgba(255, 255, 255, 0.85));
+    border-color: var(--border-color, rgba(0, 0, 0, 0.15));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .platform-macos .floating-button:active {
-    transform: scale(0.95);
-    background: rgba(255, 255, 255, 0.55);
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.65));
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
     transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Material Design Floating Buttons (Windows/Linux) */
 .platform-other .floating-button {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    font-size: 20px;
+    padding: 6px 16px;
+    height: 32px;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #6c757d;
+    color: white;
+    border: none;
 }
 
 .platform-other .floating-button:hover {
-    background: var(--bg-tertiary);
-    transform: scale(1.05);
+    background: #5a6268;
 }
 
 .platform-other .floating-button:active {
-    transform: scale(1.0);
+    background: #545b62;
 }
 
 .grid-container {
@@ -570,36 +571,30 @@ body {
 
 /* Add button specific styling */
 .add-button {
-    background: var(--bg-secondary, rgba(255, 255, 255, 0.75)) !important;
-    color: var(--text-primary, #1d1d1f) !important;
-    border: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.1)) !important;
-    font-size: 20px;
-    font-weight: 300;
+    /* Inherits from .floating-button base styles */
 }
 
-/* macOS Native Add Button - Bright Blue */
+/* macOS Native Add Button - Primary Blue */
 .platform-macos .add-button {
-    background: #007aff !important;
-    border: none !important;
+    background: var(--accent, #007aff) !important;
+    color: white !important;
+    border: 0.5px solid var(--accent, #007aff) !important;
+    font-weight: 400;
+    box-shadow: 0 1px 2px rgba(0, 122, 255, 0.2);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    box-shadow:
-        0 2px 8px rgba(0, 122, 255, 0.3),
-        0 0 0 0.5px rgba(255, 255, 255, 0.2) inset;
-    color: white !important;
 }
 
 .platform-macos .add-button:hover {
     background: #0051d5 !important;
-    transform: scale(1.05);
-    box-shadow:
-        0 4px 12px rgba(0, 122, 255, 0.4),
-        0 0 0 0.5px rgba(255, 255, 255, 0.3) inset;
+    border-color: #0051d5 !important;
+    box-shadow: 0 1px 3px rgba(0, 122, 255, 0.3);
 }
 
 .platform-macos .add-button:active {
-    transform: scale(0.95);
     background: #0040a8 !important;
+    border-color: #0040a8 !important;
+    box-shadow: 0 1px 1px rgba(0, 122, 255, 0.2);
     transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -607,6 +602,7 @@ body {
 .platform-other .add-button {
     background: var(--accent) !important;
     color: white !important;
+    border: none !important;
 }
 
 .platform-other .add-button:hover {
