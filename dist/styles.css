@@ -268,7 +268,7 @@ body {
 
 .app-grid {
     display: grid;
-    gap: 12px;
+    gap: 4px;
     max-width: 100%;
     width: 100%;
     outline: none;
@@ -277,7 +277,7 @@ body {
 
 /* macOS Native Grid Spacing - More Generous Gap */
 .platform-macos .app-grid {
-    gap: 18px;
+    gap: 6px;
 }
 
 .icon-item {
