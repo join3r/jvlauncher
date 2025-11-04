@@ -439,29 +439,52 @@ async function loadAppData() {
 // Save app
 async function saveApp() {
     stopRecording();
-    
+
     const appType = getTypeFromSegment();
     const name = document.getElementById('app-name').value.trim();
     const url = document.getElementById('app-url').value.trim();
     const binaryPath = document.getElementById('app-binary').value.trim();
     const cliParams = document.getElementById('app-params').value.trim();
     const shortcut = document.getElementById('app-shortcut').value.trim();
-    
+
     if (!name) {
         alert('Please enter an application name');
         return;
     }
-    
+
     if (appType === 'webapp' && !url) {
         alert('Please enter a URL for the web application');
         return;
     }
-    
+
     if (appType !== 'webapp' && !binaryPath) {
         alert('Please enter a binary path');
         return;
     }
-    
+
+    // Check for keyboard shortcut conflicts
+    if (shortcut) {
+        try {
+            const conflict = await invoke('check_shortcut_conflict', {
+                shortcut: shortcut,
+                excludeAppId: isEditMode && appData ? appData.id : null
+            });
+
+            if (conflict) {
+                const conflictMessage = conflict.conflict_type === 'global'
+                    ? `This keyboard shortcut is already assigned to the ${conflict.app_name}.`
+                    : `This keyboard shortcut is already assigned to "${conflict.app_name}".`;
+
+                alert(`Keyboard Shortcut Conflict\n\n${conflictMessage}\n\nPlease choose a different shortcut or remove the shortcut from the other application first.`);
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to check shortcut conflict:', error);
+            alert('Failed to validate keyboard shortcut: ' + error);
+            return;
+        }
+    }
+
     try {
         // Finalize temp icon if one was selected
         let finalIconPath = iconPath;

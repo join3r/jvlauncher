@@ -278,6 +278,66 @@ pub fn update_global_shortcut(app_handle: AppHandle, shortcut: String) -> Result
         .map_err(|e| format!("Failed to update global shortcut: {}", e))
 }
 
+/// Check if a keyboard shortcut is already in use
+/// Returns None if the shortcut is available, or Some(conflict_info) if it's already in use
+#[tauri::command]
+pub fn check_shortcut_conflict(
+    pool: State<DbPool>,
+    shortcut: String,
+    exclude_app_id: Option<i64>,
+) -> Result<Option<ShortcutConflict>, String> {
+    // Skip check if shortcut is empty
+    if shortcut.trim().is_empty() {
+        return Ok(None);
+    }
+
+    // Check against global shortcut
+    let settings = database::get_settings(&pool)
+        .map_err(|e| format!("Failed to get settings: {}", e))?;
+
+    if settings.global_shortcut.eq_ignore_ascii_case(&shortcut) {
+        return Ok(Some(ShortcutConflict {
+            conflict_type: "global".to_string(),
+            app_name: "Global Launcher Shortcut".to_string(),
+            app_id: None,
+        }));
+    }
+
+    // Check against other apps
+    let apps = database::get_all_apps(&pool)
+        .map_err(|e| format!("Failed to get apps: {}", e))?;
+
+    for app in apps {
+        // Skip the app being edited (if any)
+        if let Some(exclude_id) = exclude_app_id {
+            if app.id == exclude_id {
+                continue;
+            }
+        }
+
+        // Check if this app has the same shortcut
+        if let Some(app_shortcut) = &app.shortcut {
+            if app_shortcut.eq_ignore_ascii_case(&shortcut) {
+                return Ok(Some(ShortcutConflict {
+                    conflict_type: "app".to_string(),
+                    app_name: app.name.clone(),
+                    app_id: Some(app.id),
+                }));
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+/// Information about a keyboard shortcut conflict
+#[derive(serde::Serialize)]
+pub struct ShortcutConflict {
+    pub conflict_type: String, // "global" or "app"
+    pub app_name: String,
+    pub app_id: Option<i64>,
+}
+
 /// Toggle the main launcher window
 #[tauri::command]
 pub fn toggle_main_window(app_handle: AppHandle) -> Result<(), String> {

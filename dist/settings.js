@@ -391,6 +391,25 @@ async function saveSettings() {
         start_at_login: document.getElementById('settings-start-login').checked
     };
 
+    // Check for keyboard shortcut conflicts with app shortcuts
+    if (newSettings.global_shortcut) {
+        try {
+            const conflict = await invoke('check_shortcut_conflict', {
+                shortcut: newSettings.global_shortcut,
+                excludeAppId: null
+            });
+
+            if (conflict && conflict.conflict_type === 'app') {
+                alert(`Keyboard Shortcut Conflict\n\nThis keyboard shortcut is already assigned to "${conflict.app_name}".\n\nPlease choose a different shortcut or remove the shortcut from the application first.`);
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to check shortcut conflict:', error);
+            alert('Failed to validate keyboard shortcut: ' + error);
+            return;
+        }
+    }
+
     try {
         await invoke('update_setting', { key: 'theme', value: newSettings.theme });
         await invoke('update_setting', { key: 'grid_cols', value: newSettings.grid_cols.toString() });

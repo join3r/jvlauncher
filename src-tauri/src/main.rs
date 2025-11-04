@@ -192,6 +192,7 @@ fn main() {
             commands::get_settings,
             commands::update_setting,
             commands::update_global_shortcut,
+            commands::check_shortcut_conflict,
             commands::toggle_main_window,
             commands::hide_main_window,
             commands::quit_app,
