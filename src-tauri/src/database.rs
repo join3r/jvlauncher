@@ -53,6 +53,7 @@ pub struct App {
     pub icon_path: Option<String>,
     pub position: i32,
     pub shortcut: Option<String>,
+    pub global_shortcut: Option<String>,
     // Details specific to app type
     pub binary_path: Option<String>,
     pub cli_params: Option<String>,
@@ -67,6 +68,7 @@ pub struct NewApp {
     pub name: String,
     pub icon_path: Option<String>,
     pub shortcut: Option<String>,
+    pub global_shortcut: Option<String>,
     pub binary_path: Option<String>,
     pub cli_params: Option<String>,
     pub url: Option<String>,
@@ -118,10 +120,14 @@ fn create_schema(conn: &Connection) -> Result<()> {
             name TEXT NOT NULL,
             icon_path TEXT,
             position INTEGER NOT NULL,
-            shortcut TEXT
+            shortcut TEXT,
+            global_shortcut TEXT
         )",
         [],
     )?;
+
+    // Add global_shortcut column to existing apps table if it doesn't exist
+    let _ = conn.execute("ALTER TABLE apps ADD COLUMN global_shortcut TEXT", []);
 
     // App details table (for native apps and TUI)
     conn.execute(
@@ -203,7 +209,7 @@ fn initialize_settings(conn: &Connection) -> Result<()> {
 pub fn get_all_apps(pool: &DbPool) -> Result<Vec<App>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
-        "SELECT a.id, a.app_type, a.name, a.icon_path, a.position, a.shortcut,
+        "SELECT a.id, a.app_type, a.name, a.icon_path, a.position, a.shortcut, a.global_shortcut,
                 ad.binary_path, ad.cli_params,
                 wd.url, wd.session_data_path
          FROM apps a
@@ -220,10 +226,11 @@ pub fn get_all_apps(pool: &DbPool) -> Result<Vec<App>> {
             icon_path: row.get(3)?,
             position: row.get(4)?,
             shortcut: row.get(5)?,
-            binary_path: row.get(6)?,
-            cli_params: row.get(7)?,
-            url: row.get(8)?,
-            session_data_path: row.get(9)?,
+            global_shortcut: row.get(6)?,
+            binary_path: row.get(7)?,
+            cli_params: row.get(8)?,
+            url: row.get(9)?,
+            session_data_path: row.get(10)?,
         })
     })?
     .collect::<Result<Vec<_>, _>>()?;
@@ -244,14 +251,15 @@ pub fn create_app(pool: &DbPool, new_app: NewApp, session_dir: Option<PathBuf>) 
 
     // Insert into apps table
     conn.execute(
-        "INSERT INTO apps (app_type, name, icon_path, position, shortcut)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO apps (app_type, name, icon_path, position, shortcut, global_shortcut)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![
             new_app.app_type.as_str(),
             new_app.name,
             new_app.icon_path,
             position,
             new_app.shortcut,
+            new_app.global_shortcut,
         ],
     )?;
 
@@ -292,9 +300,9 @@ pub fn update_app(pool: &DbPool, app: App) -> Result<()> {
     let conn = pool.get()?;
 
     conn.execute(
-        "UPDATE apps SET name = ?1, icon_path = ?2, shortcut = ?3
-         WHERE id = ?4",
-        params![app.name, app.icon_path, app.shortcut, app.id],
+        "UPDATE apps SET name = ?1, icon_path = ?2, shortcut = ?3, global_shortcut = ?4
+         WHERE id = ?5",
+        params![app.name, app.icon_path, app.shortcut, app.global_shortcut, app.id],
     )?;
 
     // Update type-specific details

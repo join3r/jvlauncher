@@ -359,14 +359,33 @@ function renderApps() {
         name.textContent = app.name;
         name.draggable = false; // Prevent text from interfering with drag
         item.appendChild(name);
-        
-        // Shortcut
-        if (app.shortcut) {
-            const shortcut = document.createElement('div');
-            shortcut.className = 'app-shortcut';
-            shortcut.textContent = app.shortcut;
-            shortcut.draggable = false; // Prevent shortcut from interfering with drag
-            item.appendChild(shortcut);
+
+        // Shortcuts container
+        if (app.shortcut || app.global_shortcut) {
+            const shortcutsContainer = document.createElement('div');
+            shortcutsContainer.className = 'app-shortcuts-container';
+            shortcutsContainer.draggable = false;
+
+            // Regular shortcut
+            if (app.shortcut) {
+                const shortcut = document.createElement('div');
+                shortcut.className = 'app-shortcut';
+                shortcut.textContent = app.shortcut;
+                shortcut.draggable = false;
+                shortcutsContainer.appendChild(shortcut);
+            }
+
+            // Global shortcut (with gold background)
+            if (app.global_shortcut) {
+                const globalShortcut = document.createElement('div');
+                globalShortcut.className = 'app-shortcut app-shortcut-global';
+                globalShortcut.textContent = app.global_shortcut;
+                globalShortcut.title = 'Global shortcut (works system-wide)';
+                globalShortcut.draggable = false;
+                shortcutsContainer.appendChild(globalShortcut);
+            }
+
+            item.appendChild(shortcutsContainer);
         }
         
         // Event listeners

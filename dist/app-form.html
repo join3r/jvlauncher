@@ -146,6 +146,8 @@
             border-color: #dc3545;
             animation: pulse 1s infinite;
         }
+        .btn-clear { padding: 3px 12px; border: 0.5px solid var(--border-color) !important; border-radius: 5px; font-size: 13px; background: var(--bg-secondary) !important; color: var(--text-primary) !important; cursor: pointer; white-space: nowrap; font-weight: 400; height: 22px; line-height: 1.2; }
+        .btn-clear:hover { background: #dc3545 !important; color: white !important; border-color: #dc3545 !important; }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
@@ -224,6 +226,17 @@
             <div class="form-control">
                 <input type="text" id="app-shortcut" placeholder="CommandOrControl+1" readonly style="flex: 1;">
                 <button type="button" class="btn-record" id="record-app-shortcut-btn">Record</button>
+                <button type="button" class="btn-clear" id="clear-app-shortcut-btn">Clear</button>
+            </div>
+
+            <div class="form-label">Global Shortcut</div>
+            <div class="form-control" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+                <div style="display: flex; gap: 6px; width: 100%;">
+                    <input type="text" id="app-global-shortcut" placeholder="CommandOrControl+Shift+1" readonly style="flex: 1;">
+                    <button type="button" class="btn-record" id="record-app-global-shortcut-btn">Record</button>
+                    <button type="button" class="btn-clear" id="clear-app-global-shortcut-btn">Clear</button>
+                </div>
+                <div class="icon-tip" style="font-size: 11px; color: #666;">Works system-wide, even when launcher is hidden. Requires modifier keys.</div>
             </div>
         </div>
 

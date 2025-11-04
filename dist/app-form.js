@@ -422,6 +422,7 @@ async function loadAppData() {
                 document.getElementById('app-binary').value = appData.binary_path || '';
                 document.getElementById('app-params').value = appData.cli_params || '';
                 document.getElementById('app-shortcut').value = appData.shortcut || '';
+                document.getElementById('app-global-shortcut').value = appData.global_shortcut || '';
                 iconPath = appData.icon_path || null;
                 // If app already has an icon, treat it as user-selected to prevent overwriting
                 if (iconPath) {
@@ -436,6 +437,60 @@ async function loadAppData() {
     }
 }
 
+// Validate global shortcut
+function validateGlobalShortcut(shortcut) {
+    if (!shortcut || shortcut.trim() === '') {
+        return { valid: true };
+    }
+
+    const parts = shortcut.split('+');
+
+    // Check if it's a simple single key shortcut
+    if (parts.length === 1) {
+        return {
+            valid: false,
+            message: 'Global shortcuts must include modifier keys (Ctrl, Alt, Cmd/Meta, Shift) to avoid interfering with normal typing.\n\nExample: CommandOrControl+Shift+A'
+        };
+    }
+
+    // Check if the last part (the actual key) is a single letter or number
+    const key = parts[parts.length - 1].toLowerCase();
+    const modifiers = parts.slice(0, -1).map(m => m.toLowerCase());
+
+    // Require at least one modifier key
+    const hasModifier = modifiers.some(m =>
+        m === 'commandorcontrol' || m === 'command' || m === 'control' ||
+        m === 'ctrl' || m === 'alt' || m === 'shift' || m === 'meta'
+    );
+
+    if (!hasModifier) {
+        return {
+            valid: false,
+            message: 'Global shortcuts must include at least one modifier key (Ctrl, Alt, Cmd/Meta, Shift).\n\nExample: CommandOrControl+Shift+A'
+        };
+    }
+
+    // Check if only Shift is used as a modifier (no "strong" modifiers)
+    const hasStrongModifier = modifiers.some(m =>
+        m === 'commandorcontrol' || m === 'command' || m === 'control' ||
+        m === 'ctrl' || m === 'alt' || m === 'meta'
+    );
+
+    const hasOnlyShift = modifiers.some(m => m === 'shift') && !hasStrongModifier;
+
+    // Check if the key is a letter or number
+    const isLetterOrNumber = /^[a-z0-9]$/.test(key);
+
+    if (hasOnlyShift && isLetterOrNumber) {
+        return {
+            valid: false,
+            message: 'Shortcuts with only Shift + a letter/number conflict with normal typing (e.g., Shift+Y types "Y").\n\nPlease use a strong modifier key like Ctrl, Alt, or Cmd.\n\nExample: CommandOrControl+Shift+Y'
+        };
+    }
+
+    return { valid: true };
+}
+
 // Save app
 async function saveApp() {
     stopRecording();
@@ -446,6 +501,7 @@ async function saveApp() {
     const binaryPath = document.getElementById('app-binary').value.trim();
     const cliParams = document.getElementById('app-params').value.trim();
     const shortcut = document.getElementById('app-shortcut').value.trim();
+    const globalShortcut = document.getElementById('app-global-shortcut').value.trim();
 
     if (!name) {
         alert('Please enter an application name');
@@ -460,6 +516,15 @@ async function saveApp() {
     if (appType !== 'webapp' && !binaryPath) {
         alert('Please enter a binary path');
         return;
+    }
+
+    // Validate global shortcut
+    if (globalShortcut) {
+        const validation = validateGlobalShortcut(globalShortcut);
+        if (!validation.valid) {
+            alert('Invalid Global Shortcut\n\n' + validation.message);
+            return;
+        }
     }
 
     // Check for keyboard shortcut conflicts
@@ -481,6 +546,29 @@ async function saveApp() {
         } catch (error) {
             console.error('Failed to check shortcut conflict:', error);
             alert('Failed to validate keyboard shortcut: ' + error);
+            return;
+        }
+    }
+
+    // Check for global shortcut conflicts
+    if (globalShortcut) {
+        try {
+            const conflict = await invoke('check_global_shortcut_conflict', {
+                shortcut: globalShortcut,
+                excludeAppId: isEditMode && appData ? appData.id : null
+            });
+
+            if (conflict) {
+                const conflictMessage = conflict.conflict_type === 'launcher'
+                    ? `This global shortcut is already assigned to the ${conflict.app_name}.`
+                    : `This global shortcut is already assigned to "${conflict.app_name}".`;
+
+                alert(`Global Shortcut Conflict\n\n${conflictMessage}\n\nPlease choose a different shortcut or remove the shortcut from the other application first.`);
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to check global shortcut conflict:', error);
+            alert('Failed to validate global shortcut: ' + error);
             return;
         }
     }
@@ -512,6 +600,7 @@ async function saveApp() {
                     icon_path: finalIconPath,
                     position: appData.position,
                     shortcut: shortcut || null,
+                    global_shortcut: globalShortcut || null,
                     binary_path: binaryPath || null,
                     cli_params: cliParams || null,
                     url: url || null,
@@ -526,6 +615,7 @@ async function saveApp() {
                     name: name,
                     icon_path: finalIconPath,
                     shortcut: shortcut || null,
+                    global_shortcut: globalShortcut || null,
                     binary_path: binaryPath || null,
                     cli_params: cliParams || null,
                     url: url || null
@@ -706,6 +796,31 @@ async function init() {
         if (recordBtn && shortcutInput) {
             recordBtn.addEventListener('click', () => {
                 startRecording(shortcutInput, recordBtn);
+            });
+        }
+
+        // Clear shortcut button
+        const clearBtn = document.getElementById('clear-app-shortcut-btn');
+        if (clearBtn && shortcutInput) {
+            clearBtn.addEventListener('click', () => {
+                shortcutInput.value = '';
+            });
+        }
+
+        // Record global shortcut button
+        const recordGlobalBtn = document.getElementById('record-app-global-shortcut-btn');
+        const globalShortcutInput = document.getElementById('app-global-shortcut');
+        if (recordGlobalBtn && globalShortcutInput) {
+            recordGlobalBtn.addEventListener('click', () => {
+                startRecording(globalShortcutInput, recordGlobalBtn);
+            });
+        }
+
+        // Clear global shortcut button
+        const clearGlobalBtn = document.getElementById('clear-app-global-shortcut-btn');
+        if (clearGlobalBtn && globalShortcutInput) {
+            clearGlobalBtn.addEventListener('click', () => {
+                globalShortcutInput.value = '';
             });
         }
 

@@ -20,23 +20,35 @@ pub fn create_app(
     let session_dir = if new_app.app_type == database::AppType::Webapp {
         let app_data = app_handle.path().app_data_dir()
             .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-        
+
         let session_id = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         let session_path = app_data.join("webapps").join(format!("session_{}", session_id));
         std::fs::create_dir_all(&session_path)
             .map_err(|e| format!("Failed to create session directory: {}", e))?;
-        
+
         Some(session_path)
     } else {
         None
     };
 
+    // Register global shortcut if provided
+    let global_shortcut = new_app.global_shortcut.clone();
+
     let app_id = database::create_app(&pool, new_app, session_dir)
         .map_err(|e| format!("Failed to create app: {}", e))?;
+
+    // Register the global shortcut for this app
+    if let Some(shortcut) = global_shortcut {
+        if !shortcut.is_empty() {
+            if let Err(e) = crate::shortcut_manager::register_app_shortcut(&app_handle, app_id, &shortcut) {
+                eprintln!("Failed to register global shortcut for app {}: {}", app_id, e);
+            }
+        }
+    }
 
     // Emit event to notify main window that an app was created
     if let Some(main_window) = app_handle.get_webview_window("main") {
@@ -49,8 +61,33 @@ pub fn create_app(
 /// Update an existing app
 #[tauri::command]
 pub fn update_app(pool: State<DbPool>, app_handle: AppHandle, app: App) -> Result<(), String> {
-    database::update_app(&pool, app)
+    // Get the old app data to check if global shortcut changed
+    let old_app = database::get_all_apps(&pool)
+        .map_err(|e| format!("Failed to get apps: {}", e))?
+        .into_iter()
+        .find(|a| a.id == app.id);
+
+    // Unregister old global shortcut if it exists
+    if let Some(old) = &old_app {
+        if let Some(old_shortcut) = &old.global_shortcut {
+            if !old_shortcut.is_empty() {
+                let _ = crate::shortcut_manager::unregister_app_shortcut(&app_handle, old_shortcut);
+            }
+        }
+    }
+
+    // Update the app in database
+    database::update_app(&pool, app.clone())
         .map_err(|e| format!("Failed to update app: {}", e))?;
+
+    // Register new global shortcut if provided
+    if let Some(new_shortcut) = &app.global_shortcut {
+        if !new_shortcut.is_empty() {
+            if let Err(e) = crate::shortcut_manager::register_app_shortcut(&app_handle, app.id, new_shortcut) {
+                eprintln!("Failed to register global shortcut for app {}: {}", app.id, e);
+            }
+        }
+    }
 
     // Emit event to notify main window that an app was updated
     if let Some(main_window) = app_handle.get_webview_window("main") {
@@ -63,6 +100,21 @@ pub fn update_app(pool: State<DbPool>, app_handle: AppHandle, app: App) -> Resul
 /// Delete an app
 #[tauri::command]
 pub fn delete_app(pool: State<DbPool>, app_handle: AppHandle, app_id: i64) -> Result<(), String> {
+    // Get the app data to unregister its global shortcut
+    let app = database::get_all_apps(&pool)
+        .map_err(|e| format!("Failed to get apps: {}", e))?
+        .into_iter()
+        .find(|a| a.id == app_id);
+
+    // Unregister global shortcut if it exists
+    if let Some(app_data) = app {
+        if let Some(shortcut) = &app_data.global_shortcut {
+            if !shortcut.is_empty() {
+                let _ = crate::shortcut_manager::unregister_app_shortcut(&app_handle, shortcut);
+            }
+        }
+    }
+
     database::delete_app(&pool, app_id)
         .map_err(|e| format!("Failed to delete app: {}", e))?;
 
@@ -330,10 +382,62 @@ pub fn check_shortcut_conflict(
     Ok(None)
 }
 
+/// Check if a global shortcut is already in use
+/// Returns None if the shortcut is available, or Some(conflict_info) if it's already in use
+#[tauri::command]
+pub fn check_global_shortcut_conflict(
+    pool: State<DbPool>,
+    shortcut: String,
+    exclude_app_id: Option<i64>,
+) -> Result<Option<ShortcutConflict>, String> {
+    // Skip check if shortcut is empty
+    if shortcut.trim().is_empty() {
+        return Ok(None);
+    }
+
+    // Check against launcher's global shortcut
+    let settings = database::get_settings(&pool)
+        .map_err(|e| format!("Failed to get settings: {}", e))?;
+
+    if settings.global_shortcut.eq_ignore_ascii_case(&shortcut) {
+        return Ok(Some(ShortcutConflict {
+            conflict_type: "launcher".to_string(),
+            app_name: "Global Launcher Shortcut".to_string(),
+            app_id: None,
+        }));
+    }
+
+    // Check against other apps' global shortcuts
+    let apps = database::get_all_apps(&pool)
+        .map_err(|e| format!("Failed to get apps: {}", e))?;
+
+    for app in apps {
+        // Skip the app being edited (if any)
+        if let Some(exclude_id) = exclude_app_id {
+            if app.id == exclude_id {
+                continue;
+            }
+        }
+
+        // Check if this app has the same global shortcut
+        if let Some(app_global_shortcut) = &app.global_shortcut {
+            if app_global_shortcut.eq_ignore_ascii_case(&shortcut) {
+                return Ok(Some(ShortcutConflict {
+                    conflict_type: "app".to_string(),
+                    app_name: app.name.clone(),
+                    app_id: Some(app.id),
+                }));
+            }
+        }
+    }
+
+    Ok(None)
+}
+
 /// Information about a keyboard shortcut conflict
 #[derive(serde::Serialize)]
 pub struct ShortcutConflict {
-    pub conflict_type: String, // "global" or "app"
+    pub conflict_type: String, // "global", "app", or "launcher"
     pub app_name: String,
     pub app_id: Option<i64>,
 }

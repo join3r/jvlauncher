@@ -13,6 +13,8 @@ mod updater;
 #[cfg(target_os = "macos")]
 mod macos_delegate;
 
+use tauri::Listener;
+
 use tauri::{Manager, menu::{MenuBuilder, MenuItemBuilder}, tray::{TrayIconBuilder, TrayIconEvent}};
 use tauri_plugin_autostart::ManagerExt;
 
@@ -79,6 +81,37 @@ fn main() {
                     let _ = autostart_manager.enable();
                 }
             }
+
+            // Register global shortcuts for all apps
+            if let Ok(apps) = database::get_all_apps(&pool) {
+                let app_handle = app.handle().clone();
+                for app_item in apps {
+                    if let Some(global_shortcut) = &app_item.global_shortcut {
+                        if !global_shortcut.is_empty() {
+                            if let Err(e) = shortcut_manager::register_app_shortcut(
+                                &app_handle,
+                                app_item.id,
+                                global_shortcut,
+                            ) {
+                                eprintln!("Failed to register global shortcut for app {}: {}", app_item.id, e);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Setup event listener for launching apps via global shortcuts
+            let pool_clone = pool.clone();
+            let app_handle_clone = app.handle().clone();
+            app.listen("launch-app-by-shortcut", move |event| {
+                if let Some(app_id) = event.payload().parse::<i64>().ok() {
+                    if let Ok(apps) = database::get_all_apps(&pool_clone) {
+                        if let Some(app_to_launch) = apps.iter().find(|a| a.id == app_id) {
+                            let _ = launcher::launch_app(app_to_launch, &app_handle_clone, &pool_clone);
+                        }
+                    }
+                }
+            });
 
             // Get main window and setup close handler
             let window = app.get_webview_window("main")
@@ -193,6 +226,7 @@ fn main() {
             commands::update_setting,
             commands::update_global_shortcut,
             commands::check_shortcut_conflict,
+            commands::check_global_shortcut_conflict,
             commands::toggle_main_window,
             commands::hide_main_window,
             commands::quit_app,
