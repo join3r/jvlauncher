@@ -761,20 +761,18 @@ async function hideWindow() {
 function showContextMenu(e, app) {
     e.preventDefault();
     closeContextMenu();
-    
+
     const menu = document.createElement('div');
     menu.className = 'context-menu';
     menu.id = 'context-menu';
-    menu.style.left = `${e.pageX}px`;
-    menu.style.top = `${e.pageY}px`;
-    
+
     const editBtn = document.createElement('button');
     editBtn.textContent = 'Edit';
     editBtn.addEventListener('click', () => {
         showEditModal(app);
         closeContextMenu();
     });
-    
+
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'danger';
     deleteBtn.textContent = 'Delete';
@@ -782,10 +780,51 @@ function showContextMenu(e, app) {
         deleteApp(app.id);
         closeContextMenu();
     });
-    
+
     menu.appendChild(editBtn);
     menu.appendChild(deleteBtn);
+
+    // Append to DOM first to measure dimensions
+    menu.style.visibility = 'hidden';
     document.body.appendChild(menu);
+
+    // Get menu dimensions
+    const menuRect = menu.getBoundingClientRect();
+    const menuWidth = menuRect.width;
+    const menuHeight = menuRect.height;
+
+    // Get window dimensions
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Calculate initial position
+    let left = e.pageX;
+    let top = e.pageY;
+
+    // Adjust horizontal position if menu would overflow right edge
+    if (left + menuWidth > windowWidth) {
+        left = windowWidth - menuWidth - 5; // 5px padding from edge
+    }
+
+    // Adjust vertical position if menu would overflow bottom edge
+    if (top + menuHeight > windowHeight) {
+        top = windowHeight - menuHeight - 5; // 5px padding from edge
+    }
+
+    // Ensure menu doesn't go off the left edge
+    if (left < 5) {
+        left = 5;
+    }
+
+    // Ensure menu doesn't go off the top edge
+    if (top < 5) {
+        top = 5;
+    }
+
+    // Apply final position and make visible
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    menu.style.visibility = 'visible';
 }
 
 // Close context menu
