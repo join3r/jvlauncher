@@ -1,0 +1,10 @@
+{
+  "version": "0.1.5",
+  "date": "2025-11-04T22:30:36Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "",
+      "url": "https://github.com/join3r/jvlauncher/releases/download/v0.1.5/jvlauncher_0.1.5_aarch64.dmg"
+    }
+  }
+}

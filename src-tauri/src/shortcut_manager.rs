@@ -113,40 +113,6 @@ pub fn unregister_app_shortcut(
     Ok(())
 }
 
-/// Unregister all app shortcuts
-pub fn unregister_all_app_shortcuts(app_handle: &AppHandle) -> Result<()> {
-    init_app_shortcuts();
-
-    let shortcuts_to_remove: Vec<String> = {
-        let shortcuts = APP_SHORTCUTS.lock().unwrap();
-        if let Some(map) = shortcuts.as_ref() {
-            map.keys().cloned().collect()
-        } else {
-            Vec::new()
-        }
-    };
-
-    for shortcut_str in shortcuts_to_remove {
-        let _ = unregister_app_shortcut(app_handle, &shortcut_str);
-    }
-
-    Ok(())
-}
-
-/// Unregister all global shortcuts (launcher + apps)
-pub fn unregister_all_shortcuts(app_handle: &AppHandle) -> Result<()> {
-    app_handle.global_shortcut().unregister_all()
-        .map_err(|e| anyhow::anyhow!("Failed to unregister shortcuts: {:?}", e))?;
-
-    // Clear the app shortcuts map
-    let mut shortcuts = APP_SHORTCUTS.lock().unwrap();
-    if let Some(map) = shortcuts.as_mut() {
-        map.clear();
-    }
-
-    Ok(())
-}
-
 /// Update the global shortcut
 pub fn update_global_shortcut(
     app_handle: &AppHandle,
