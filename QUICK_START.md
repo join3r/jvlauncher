@@ -97,8 +97,8 @@ sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev
 ## Next Steps
 
 - Read [README.md](README.md) for full feature list
-- Check [SETUP.md](SETUP.md) for detailed setup instructions
 - See [ARCHITECTURE.md](ARCHITECTURE.md) to understand the code
+- Check [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines
 
 ## Need Help?
 

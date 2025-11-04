@@ -53,4 +53,4 @@ Settings are stored in:
 
 ## License
 
-No idea
+MIT

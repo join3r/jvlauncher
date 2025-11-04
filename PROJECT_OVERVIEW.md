@@ -44,7 +44,7 @@ jvlauncher is a cross-platform application launcher inspired by tools like Alfre
 **Drag & Drop**
 - Reorder apps easily
 - Visual feedback during drag
-- Auto-saves new positionsk
+- Auto-saves new positions
 
 ### 4. Customization
 
@@ -83,14 +83,15 @@ jvlauncher is a cross-platform application launcher inspired by tools like Alfre
 ## Project Structure 📁
 
 ```
-test-impl/
+jvlauncher/
 ├── Documentation
 │   ├── README.md              # Main documentation
 │   ├── QUICK_START.md         # 5-minute setup guide
-│   ├── SETUP.md               # Detailed setup instructions
 │   ├── ARCHITECTURE.md        # Technical architecture
 │   ├── CONTRIBUTING.md        # Contribution guidelines
 │   ├── CHANGELOG.md           # Version history
+│   ├── RELEASE_GUIDE.md       # Release process documentation
+│   ├── RELEASE_CHECKLIST.md   # Release checklist
 │   └── PROJECT_OVERVIEW.md    # This file
 │
 ├── Scripts
@@ -306,7 +307,7 @@ Key areas for contribution:
 
 ## License 📄
 
-[Your License Here]
+MIT License
 
 ## Credits 👏
 
@@ -331,9 +332,9 @@ Inspired by:
 ## Quick Links 🔗
 
 - [Quick Start](QUICK_START.md) - Get running in 5 minutes
-- [Setup Guide](SETUP.md) - Detailed installation
 - [Architecture](ARCHITECTURE.md) - How it works
 - [Contributing](CONTRIBUTING.md) - Join development
+- [Release Guide](RELEASE_GUIDE.md) - Creating releases
 - [Changelog](CHANGELOG.md) - Version history
 
 ---

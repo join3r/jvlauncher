@@ -5,7 +5,7 @@ Thank you for your interest in contributing! This document provides guidelines f
 ## Development Setup
 
 1. Fork and clone the repository
-2. Follow the setup instructions in [SETUP.md](SETUP.md)
+2. Follow the setup instructions in [QUICK_START.md](QUICK_START.md)
 3. Create a new branch for your feature: `git checkout -b feature/my-feature`
 
 ## Code Style
