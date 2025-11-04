@@ -1,6 +1,6 @@
 [package]
 name = "jvlauncher"
-version = "0.1.0"
+version = "0.1.1"
 description = "A cross-platform application launcher"
 authors = ["you"]
 license = ""
