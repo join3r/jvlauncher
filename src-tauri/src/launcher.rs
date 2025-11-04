@@ -1,14 +1,14 @@
-use crate::database::{App, AppType};
+use crate::database::{App, AppType, DbPool};
 use crate::terminal::create_terminal_window;
 use anyhow::{anyhow, Result};
 use std::process::Command;
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 /// Launch an application based on its type
-pub fn launch_app(app: &App, app_handle: &AppHandle) -> Result<()> {
+pub fn launch_app(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()> {
     match app.app_type {
         AppType::App => launch_application(app)?,
-        AppType::Webapp => launch_webapp(app, app_handle)?,
+        AppType::Webapp => launch_webapp(app, app_handle, pool)?,
         AppType::Tui => launch_tui(app, app_handle)?,
     }
     Ok(())
@@ -61,7 +61,7 @@ fn launch_application(app: &App) -> Result<()> {
 }
 
 /// Launch a webapp in a dedicated webview window
-fn launch_webapp(app: &App, app_handle: &AppHandle) -> Result<()> {
+fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()> {
     let url = app.url.as_ref()
         .ok_or_else(|| anyhow!("No URL specified for webapp"))?;
 
@@ -79,18 +79,53 @@ fn launch_webapp(app: &App, app_handle: &AppHandle) -> Result<()> {
         return Ok(());
     }
 
+    // Try to load saved window state
+    let saved_state = crate::database::load_window_state(pool, app.id).ok().flatten();
+
     // Create new webview window with persistent session
-    let _window = WebviewWindowBuilder::new(
+    let mut builder = WebviewWindowBuilder::new(
         app_handle,
         &window_label,
         WebviewUrl::External(url.parse()?)
     )
     .title(&app.name)
-    .inner_size(1200.0, 800.0)
     .resizable(true)
-    .center()
-    .data_directory(std::path::PathBuf::from(session_path))
-    .build()?;
+    .data_directory(std::path::PathBuf::from(session_path));
+
+    // Apply saved window state if available, otherwise use defaults
+    if let Some(state) = saved_state {
+        builder = builder
+            .inner_size(state.width as f64, state.height as f64)
+            .position(state.x as f64, state.y as f64);
+    } else {
+        builder = builder
+            .inner_size(1200.0, 800.0)
+            .center();
+    }
+
+    let window = builder.build()?;
+
+    // Set up event handler to save window state when it closes
+    let app_id = app.id;
+    let pool_clone = pool.clone();
+    let window_clone = window.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { .. } = event {
+            // Get the window's current position and size
+            if let Ok(position) = window_clone.outer_position() {
+                if let Ok(size) = window_clone.outer_size() {
+                    let state = crate::database::WindowState {
+                        x: position.x,
+                        y: position.y,
+                        width: size.width as i32,
+                        height: size.height as i32,
+                    };
+                    // Save the window state to database
+                    let _ = crate::database::save_window_state(&pool_clone, app_id, &state);
+                }
+            }
+        }
+    });
 
     // Note: Webapp windows close normally when user clicks X or presses Cmd+Q
     // The app won't quit because the system tray keeps it running

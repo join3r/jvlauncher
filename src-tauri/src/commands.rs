@@ -86,12 +86,12 @@ pub fn reorder_apps(pool: State<DbPool>, app_ids: Vec<i64>) -> Result<(), String
 pub fn launch(pool: State<DbPool>, app_handle: AppHandle, app_id: i64) -> Result<(), String> {
     let apps = database::get_all_apps(&pool)
         .map_err(|e| format!("Failed to get apps: {}", e))?;
-    
+
     let app = apps.iter()
         .find(|a| a.id == app_id)
         .ok_or_else(|| format!("App with id {} not found", app_id))?;
 
-    launcher::launch_app(app, &app_handle)
+    launcher::launch_app(app, &app_handle, &pool)
         .map_err(|e| format!("Failed to launch app: {}", e))?;
 
     // Hide the main launcher window after launching

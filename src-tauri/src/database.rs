@@ -35,6 +35,15 @@ impl AppType {
     }
 }
 
+/// Represents window position and size
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowState {
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+}
+
 /// Represents an application in the launcher
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct App {
@@ -131,10 +140,20 @@ fn create_schema(conn: &Connection) -> Result<()> {
             app_id INTEGER PRIMARY KEY,
             url TEXT NOT NULL,
             session_data_path TEXT NOT NULL,
+            window_x INTEGER,
+            window_y INTEGER,
+            window_width INTEGER,
+            window_height INTEGER,
             FOREIGN KEY(app_id) REFERENCES apps(id) ON DELETE CASCADE
         )",
         [],
     )?;
+
+    // Add columns to existing webapp_details table if they don't exist
+    let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN window_x INTEGER", []);
+    let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN window_y INTEGER", []);
+    let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN window_width INTEGER", []);
+    let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN window_height INTEGER", []);
 
     // Settings table
     conn.execute(
@@ -377,12 +396,90 @@ pub fn get_settings(pool: &DbPool) -> Result<Settings> {
 /// Update a single setting
 pub fn update_setting(pool: &DbPool, key: &str, value: &str) -> Result<()> {
     let conn = pool.get()?;
-    
+
     conn.execute(
         "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
         params![key, value],
     )?;
-    
+
     Ok(())
+}
+
+/// Save window state for a webapp
+pub fn save_window_state(pool: &DbPool, app_id: i64, state: &WindowState) -> Result<()> {
+    let conn = pool.get()?;
+
+    conn.execute(
+        "UPDATE webapp_details SET window_x = ?1, window_y = ?2, window_width = ?3, window_height = ?4
+         WHERE app_id = ?5",
+        params![state.x, state.y, state.width, state.height, app_id],
+    )?;
+
+    Ok(())
+}
+
+/// Load window state for a webapp
+pub fn load_window_state(pool: &DbPool, app_id: i64) -> Result<Option<WindowState>> {
+    let conn = pool.get()?;
+
+    let result = conn.query_row(
+        "SELECT window_x, window_y, window_width, window_height FROM webapp_details WHERE app_id = ?1",
+        params![app_id],
+        |row| {
+            let x: Option<i32> = row.get(0)?;
+            let y: Option<i32> = row.get(1)?;
+            let width: Option<i32> = row.get(2)?;
+            let height: Option<i32> = row.get(3)?;
+
+            // Only return WindowState if all values are present
+            match (x, y, width, height) {
+                (Some(x), Some(y), Some(w), Some(h)) => Ok(Some(WindowState { x, y, width: w, height: h })),
+                _ => Ok(None),
+            }
+        },
+    );
+
+    match result {
+        Ok(state) => Ok(state),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(e.into()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_window_state_serialization() {
+        let state = WindowState {
+            x: 100,
+            y: 200,
+            width: 1200,
+            height: 800,
+        };
+
+        assert_eq!(state.x, 100);
+        assert_eq!(state.y, 200);
+        assert_eq!(state.width, 1200);
+        assert_eq!(state.height, 800);
+    }
+
+    #[test]
+    fn test_window_state_clone() {
+        let state1 = WindowState {
+            x: 100,
+            y: 200,
+            width: 1200,
+            height: 800,
+        };
+
+        let state2 = state1.clone();
+
+        assert_eq!(state1.x, state2.x);
+        assert_eq!(state1.y, state2.y);
+        assert_eq!(state1.width, state2.width);
+        assert_eq!(state1.height, state2.height);
+    }
 }
 
