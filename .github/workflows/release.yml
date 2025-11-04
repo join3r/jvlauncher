@@ -85,7 +85,7 @@ jobs:
             - `jvlauncher_*_aarch64.dmg`
 
             See the assets below to download and install this version.
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           # Include updater JSON for auto-updates
           includeUpdaterJson: true
@@ -110,8 +110,8 @@ jobs:
         with:
           name: macos-${{ matrix.settings.arch }}-build
           path: |
-            target/${{ matrix.settings.target }}/release/bundle/dmg/*.dmg
-            target/${{ matrix.settings.target }}/release/bundle/macos/*.app
+            src-tauri/target/${{ matrix.settings.target }}/release/bundle/dmg/*.dmg
+            src-tauri/target/${{ matrix.settings.target }}/release/bundle/macos/*.app
           retention-days: 7
           if-no-files-found: warn
 
