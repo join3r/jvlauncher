@@ -307,6 +307,7 @@ async function loadSettings() {
         shortcutInput.value = formatShortcutDisplay(rawShortcut);
 
         document.getElementById('settings-start-login').checked = settings.start_at_login || false;
+        document.getElementById('settings-hide-app-names').checked = settings.hide_app_names || false;
 
         // Apply the theme to this window
         applyTheme(settings.theme || 'system');
@@ -438,7 +439,8 @@ async function saveSettings() {
         grid_cols: parseInt(document.getElementById('settings-grid-cols').value),
         grid_rows: parseInt(document.getElementById('settings-grid-rows').value),
         global_shortcut: shortcutInput.dataset.rawValue || shortcutInput.value,
-        start_at_login: document.getElementById('settings-start-login').checked
+        start_at_login: document.getElementById('settings-start-login').checked,
+        hide_app_names: document.getElementById('settings-hide-app-names').checked
     };
 
     // Check for keyboard shortcut conflicts with app shortcuts
@@ -466,6 +468,7 @@ async function saveSettings() {
         await invoke('update_setting', { key: 'grid_rows', value: newSettings.grid_rows.toString() });
         await invoke('update_setting', { key: 'global_shortcut', value: newSettings.global_shortcut });
         await invoke('update_setting', { key: 'start_at_login', value: newSettings.start_at_login ? 'true' : 'false' });
+        await invoke('update_setting', { key: 'hide_app_names', value: newSettings.hide_app_names ? 'true' : 'false' });
 
         // Update the global shortcut registration in the backend
         await invoke('update_global_shortcut', { shortcut: newSettings.global_shortcut });

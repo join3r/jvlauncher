@@ -83,6 +83,7 @@ pub struct Settings {
     pub grid_rows: i32,
     pub start_at_login: bool,
     pub terminal_command: Option<String>,
+    pub hide_app_names: bool,
 }
 
 impl Default for Settings {
@@ -94,6 +95,7 @@ impl Default for Settings {
             grid_rows: 3,
             start_at_login: false,
             terminal_command: None,
+            hide_app_names: false,
         }
     }
 }
@@ -176,32 +178,37 @@ fn create_schema(conn: &Connection) -> Result<()> {
 /// Initialize default settings if they don't exist
 fn initialize_settings(conn: &Connection) -> Result<()> {
     let default_settings = Settings::default();
-    
+
     conn.execute(
         "INSERT OR IGNORE INTO settings (key, value) VALUES ('global_shortcut', ?1)",
         params![default_settings.global_shortcut],
     )?;
-    
+
     conn.execute(
         "INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', ?1)",
         params![default_settings.theme],
     )?;
-    
+
     conn.execute(
         "INSERT OR IGNORE INTO settings (key, value) VALUES ('grid_cols', ?1)",
         params![default_settings.grid_cols.to_string()],
     )?;
-    
+
     conn.execute(
         "INSERT OR IGNORE INTO settings (key, value) VALUES ('grid_rows', ?1)",
         params![default_settings.grid_rows.to_string()],
     )?;
-    
+
     conn.execute(
         "INSERT OR IGNORE INTO settings (key, value) VALUES ('start_at_login', ?1)",
         params![if default_settings.start_at_login { "true" } else { "false" }],
     )?;
-    
+
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('hide_app_names', ?1)",
+        params![if default_settings.hide_app_names { "true" } else { "false" }],
+    )?;
+
     Ok(())
 }
 
@@ -350,7 +357,7 @@ pub fn reorder_apps(pool: &DbPool, app_ids: Vec<i64>) -> Result<()> {
 /// Get all settings
 pub fn get_settings(pool: &DbPool) -> Result<Settings> {
     let conn = pool.get()?;
-    
+
     let global_shortcut: String = conn.query_row(
         "SELECT value FROM settings WHERE key = 'global_shortcut'",
         [],
@@ -391,6 +398,12 @@ pub fn get_settings(pool: &DbPool) -> Result<Settings> {
         |row| row.get(0),
     ).ok();
 
+    let hide_app_names: bool = conn.query_row(
+        "SELECT value FROM settings WHERE key = 'hide_app_names'",
+        [],
+        |row| row.get::<_, String>(0),
+    ).unwrap_or_else(|_| "false".to_string()) == "true";
+
     Ok(Settings {
         global_shortcut,
         theme,
@@ -398,6 +411,7 @@ pub fn get_settings(pool: &DbPool) -> Result<Settings> {
         grid_rows,
         start_at_login,
         terminal_command,
+        hide_app_names,
     })
 }
 

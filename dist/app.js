@@ -90,7 +90,7 @@ async function detectPlatform() {
 
 // State
 let apps = [];
-let settings = { grid_cols: 4, grid_rows: 3, theme: 'system', global_shortcut: 'CommandOrControl+Shift+Space', start_at_login: false };
+let settings = { grid_cols: 4, grid_rows: 3, theme: 'system', global_shortcut: 'CommandOrControl+Shift+Space', start_at_login: false, hide_app_names: false };
 let selectedIndex = null; // Start with no selection - highlight only appears after arrow/enter key press
 let isDragging = false; // Track if a drag operation is in progress
 let draggedIndex = null; // Track which item is being dragged
@@ -330,6 +330,12 @@ async function loadSettings() {
     try {
         settings = await invoke('get_settings');
         updateGridSize();
+        // Apply hide app names setting
+        if (settings.hide_app_names) {
+            document.documentElement.classList.add('hide-app-names');
+        } else {
+            document.documentElement.classList.remove('hide-app-names');
+        }
         // Resize window to match grid dimensions
         await resizeWindow();
     } catch (error) {

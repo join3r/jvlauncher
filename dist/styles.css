@@ -461,6 +461,11 @@ body {
     margin-top: 6px;
 }
 
+/* Hide app names when setting is enabled */
+.hide-app-names .icon-item .app-name {
+    display: none;
+}
+
 /* Shortcuts container - holds both regular and global shortcuts */
 .icon-item .app-shortcuts-container {
     display: flex;
