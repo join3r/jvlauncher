@@ -110,6 +110,36 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
             return;
         }}
 
+        // Helper to check if dark mode is active
+        // Checks data-theme attribute first, then falls back to system preference
+        function isDarkMode() {{
+            const dataTheme = document.documentElement.getAttribute('data-theme');
+            if (dataTheme === 'dark') {{
+                return true;
+            }} else if (dataTheme === 'light') {{
+                return false;
+            }} else {{
+                // System theme - use media query
+                return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }}
+        }}
+
+        // Load and apply theme from settings
+        if (window.__TAURI__) {{
+            window.__TAURI__.core.invoke('get_settings').then(settings => {{
+                const theme = settings.theme || 'system';
+                if (theme === 'light') {{
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }} else if (theme === 'dark') {{
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }} else {{
+                    document.documentElement.removeAttribute('data-theme');
+                }}
+            }}).catch(err => {{
+                console.error('Failed to load theme settings:', err);
+            }});
+        }}
+
         // Create navigation bar
         const navBar = document.createElement('div');
         navBar.id = 'jvlauncher-nav-bar';
@@ -123,18 +153,44 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
             align-items: center;
             gap: 8px;
             padding: 0 12px;
-            background: rgba(245, 245, 247, 0.8);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
             z-index: 999999;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         `;
 
-        // Dark mode support
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {{
-            navBar.style.background = 'rgba(44, 44, 46, 0.8)';
-            navBar.style.borderBottom = '0.5px solid rgba(255, 255, 255, 0.1)';
+        // Function to update nav bar theme
+        function updateNavBarTheme() {{
+            if (isDarkMode()) {{
+                navBar.style.background = 'rgba(44, 44, 46, 0.8)';
+                navBar.style.borderBottom = '0.5px solid rgba(255, 255, 255, 0.1)';
+            }} else {{
+                navBar.style.background = 'rgba(245, 245, 247, 0.8)';
+                navBar.style.borderBottom = '0.5px solid rgba(0, 0, 0, 0.1)';
+            }}
+        }}
+
+        // Set initial theme
+        updateNavBarTheme();
+
+        // Listen for theme changes via data-theme attribute
+        const observer = new MutationObserver((mutations) => {{
+            mutations.forEach((mutation) => {{
+                if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {{
+                    updateNavBarTheme();
+                }}
+            }});
+        }});
+        observer.observe(document.documentElement, {{ attributes: true, attributeFilter: ['data-theme'] }});
+
+        // Also listen for system theme changes (when theme is set to 'system')
+        if (window.matchMedia) {{
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {{
+                // Only update if data-theme is not set (system theme mode)
+                if (!document.documentElement.hasAttribute('data-theme')) {{
+                    updateNavBarTheme();
+                }}
+            }});
         }}
 
         // Create button helper
@@ -144,8 +200,6 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
             btn.style.cssText = `
                 appearance: none;
                 border: none;
-                background: rgba(0, 0, 0, 0.05);
-                color: #1d1d1f;
                 padding: 6px 12px;
                 border-radius: 6px;
                 font-size: 14px;
@@ -154,13 +208,41 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
                 font-weight: 500;
             `;
 
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {{
-                btn.style.background = 'rgba(255, 255, 255, 0.1)';
-                btn.style.color = '#f5f5f7';
+            // Function to update button theme
+            function updateButtonTheme() {{
+                if (isDarkMode()) {{
+                    btn.style.background = 'rgba(255, 255, 255, 0.1)';
+                    btn.style.color = '#f5f5f7';
+                }} else {{
+                    btn.style.background = 'rgba(0, 0, 0, 0.05)';
+                    btn.style.color = '#1d1d1f';
+                }}
+            }}
+
+            // Set initial theme
+            updateButtonTheme();
+
+            // Listen for theme changes via data-theme attribute
+            const btnObserver = new MutationObserver((mutations) => {{
+                mutations.forEach((mutation) => {{
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {{
+                        updateButtonTheme();
+                    }}
+                }});
+            }});
+            btnObserver.observe(document.documentElement, {{ attributes: true, attributeFilter: ['data-theme'] }});
+
+            // Also listen for system theme changes
+            if (window.matchMedia) {{
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {{
+                    if (!document.documentElement.hasAttribute('data-theme')) {{
+                        updateButtonTheme();
+                    }}
+                }});
             }}
 
             btn.addEventListener('mouseenter', () => {{
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {{
+                if (isDarkMode()) {{
                     btn.style.background = 'rgba(255, 255, 255, 0.15)';
                 }} else {{
                     btn.style.background = 'rgba(0, 0, 0, 0.08)';
@@ -168,7 +250,7 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
             }});
 
             btn.addEventListener('mouseleave', () => {{
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {{
+                if (isDarkMode()) {{
                     btn.style.background = 'rgba(255, 255, 255, 0.1)';
                 }} else {{
                     btn.style.background = 'rgba(0, 0, 0, 0.05)';
@@ -191,19 +273,45 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
             flex: 1;
             margin-left: 12px;
             padding: 6px 12px;
-            background: rgba(0, 0, 0, 0.03);
             border-radius: 6px;
             font-size: 12px;
-            color: #6e6e73;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
         `;
 
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {{
-            urlDisplay.style.background = 'rgba(255, 255, 255, 0.05)';
-            urlDisplay.style.color = '#98989d';
+        // Function to update URL display theme
+        function updateUrlDisplayTheme() {{
+            if (isDarkMode()) {{
+                urlDisplay.style.background = 'rgba(255, 255, 255, 0.05)';
+                urlDisplay.style.color = '#98989d';
+            }} else {{
+                urlDisplay.style.background = 'rgba(0, 0, 0, 0.03)';
+                urlDisplay.style.color = '#6e6e73';
+            }}
+        }}
+
+        // Set initial theme
+        updateUrlDisplayTheme();
+
+        // Listen for theme changes via data-theme attribute
+        const urlObserver = new MutationObserver((mutations) => {{
+            mutations.forEach((mutation) => {{
+                if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {{
+                    updateUrlDisplayTheme();
+                }}
+            }});
+        }});
+        urlObserver.observe(document.documentElement, {{ attributes: true, attributeFilter: ['data-theme'] }});
+
+        // Also listen for system theme changes
+        if (window.matchMedia) {{
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {{
+                if (!document.documentElement.hasAttribute('data-theme')) {{
+                    updateUrlDisplayTheme();
+                }}
+            }});
         }}
 
         // Update URL display
