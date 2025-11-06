@@ -412,6 +412,10 @@ function updateFieldsVisibility() {
     const urlGroup = document.getElementById('url-group');
     const navControlsLabel = document.getElementById('nav-controls-label');
     const navControlsGroup = document.getElementById('nav-controls-group');
+    const externalLinksLabel = document.getElementById('external-links-label');
+    const externalLinksGroup = document.getElementById('external-links-group');
+    const oauthLabel = document.getElementById('oauth-label');
+    const oauthGroup = document.getElementById('oauth-group');
     const binaryLabel = document.getElementById('binary-label');
     const binaryGroup = document.getElementById('binary-group');
     const paramsLabel = document.getElementById('params-label');
@@ -422,6 +426,10 @@ function updateFieldsVisibility() {
         urlGroup.style.display = 'flex';
         navControlsLabel.style.display = 'block';
         navControlsGroup.style.display = 'flex';
+        externalLinksLabel.style.display = 'block';
+        externalLinksGroup.style.display = 'flex';
+        oauthLabel.style.display = 'block';
+        oauthGroup.style.display = 'flex';
         binaryLabel.style.display = 'none';
         binaryGroup.style.display = 'none';
         paramsLabel.style.display = 'none';
@@ -431,6 +439,10 @@ function updateFieldsVisibility() {
         urlGroup.style.display = 'none';
         navControlsLabel.style.display = 'none';
         navControlsGroup.style.display = 'none';
+        externalLinksLabel.style.display = 'none';
+        externalLinksGroup.style.display = 'none';
+        oauthLabel.style.display = 'none';
+        oauthGroup.style.display = 'none';
         binaryLabel.style.display = 'block';
         binaryGroup.style.display = 'flex';
         paramsLabel.style.display = 'block';
@@ -471,9 +483,11 @@ async function loadAppData() {
                 document.getElementById('app-binary').value = appData.binary_path || '';
                 document.getElementById('app-params').value = appData.cli_params || '';
 
-                // Set navigation controls checkbox for webapps
+                // Set webapp-specific checkboxes
                 if (appData.app_type === 'webapp') {
                     document.getElementById('show-nav-controls').checked = appData.show_nav_controls || false;
+                    document.getElementById('open-external-links').checked = appData.open_external_links || false;
+                    document.getElementById('enable-oauth').checked = appData.enable_oauth || false;
                 }
 
                 // Store raw shortcut values and display formatted versions
@@ -661,6 +675,8 @@ async function saveApp() {
         if (isEditMode && appData) {
             // Update existing app
             const showNavControls = appType === 'webapp' ? document.getElementById('show-nav-controls').checked : null;
+            const openExternalLinks = appType === 'webapp' ? document.getElementById('open-external-links').checked : null;
+            const enableOauth = appType === 'webapp' ? document.getElementById('enable-oauth').checked : null;
             await invoke('update_app', {
                 app: {
                     id: appData.id,
@@ -674,12 +690,16 @@ async function saveApp() {
                     cli_params: cliParams || null,
                     url: url || null,
                     session_data_path: appData.session_data_path,
-                    show_nav_controls: showNavControls
+                    show_nav_controls: showNavControls,
+                    open_external_links: openExternalLinks,
+                    enable_oauth: enableOauth
                 }
             });
         } else {
             // Create new app
             const showNavControls = appType === 'webapp' ? document.getElementById('show-nav-controls').checked : null;
+            const openExternalLinks = appType === 'webapp' ? document.getElementById('open-external-links').checked : null;
+            const enableOauth = appType === 'webapp' ? document.getElementById('enable-oauth').checked : null;
             await invoke('create_app', {
                 newApp: {
                     app_type: appType,
@@ -690,7 +710,9 @@ async function saveApp() {
                     binary_path: binaryPath || null,
                     cli_params: cliParams || null,
                     url: url || null,
-                    show_nav_controls: showNavControls
+                    show_nav_controls: showNavControls,
+                    open_external_links: openExternalLinks,
+                    enable_oauth: enableOauth
                 }
             });
         }

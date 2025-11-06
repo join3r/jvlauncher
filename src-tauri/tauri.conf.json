@@ -108,6 +108,33 @@
             "core:window:allow-close",
             "core:window:allow-set-focus"
           ]
+        },
+        {
+          "identifier": "webapp-windows-capability",
+          "description": "Capability for webapp windows",
+          "windows": [
+            "webapp_*"
+          ],
+          "remote": {
+            "urls": [
+              "http://**",
+              "https://**"
+            ]
+          },
+          "permissions": [
+            "core:default",
+            {
+              "identifier": "shell:allow-open",
+              "allow": [
+                {
+                  "url": "http://**"
+                },
+                {
+                  "url": "https://**"
+                }
+              ]
+            }
+          ]
         }
       ]
     },

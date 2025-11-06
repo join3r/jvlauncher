@@ -90,7 +90,9 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
     )
     .title(&app.name)
     .resizable(true)
-    .data_directory(std::path::PathBuf::from(session_path));
+    .data_directory(std::path::PathBuf::from(session_path))
+    // Set a standard browser user agent to avoid being blocked by sites like Cloudflare Access
+    .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
 
     // Add navigation bar initialization script if enabled (runs on every page load)
     if app.show_nav_controls.unwrap_or(false) {
@@ -111,33 +113,10 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
         }}
 
         // Helper to check if dark mode is active
-        // Checks data-theme attribute first, then falls back to system preference
+        // For webapp windows, we just use system preference since they don't have
+        // permission to access app settings
         function isDarkMode() {{
-            const dataTheme = document.documentElement.getAttribute('data-theme');
-            if (dataTheme === 'dark') {{
-                return true;
-            }} else if (dataTheme === 'light') {{
-                return false;
-            }} else {{
-                // System theme - use media query
-                return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            }}
-        }}
-
-        // Load and apply theme from settings
-        if (window.__TAURI__) {{
-            window.__TAURI__.core.invoke('get_settings').then(settings => {{
-                const theme = settings.theme || 'system';
-                if (theme === 'light') {{
-                    document.documentElement.setAttribute('data-theme', 'light');
-                }} else if (theme === 'dark') {{
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                }} else {{
-                    document.documentElement.removeAttribute('data-theme');
-                }}
-            }}).catch(err => {{
-                console.error('Failed to load theme settings:', err);
-            }});
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         }}
 
         // Create navigation bar
@@ -354,6 +333,108 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
 "#, original_url);
 
         builder = builder.initialization_script(&nav_script);
+    }
+
+    // Add external link handling script if enabled
+    if app.open_external_links.unwrap_or(false) {
+        let webapp_url = url.clone();
+        let external_links_script = format!(r#"
+(function() {{
+    // Wait for Tauri API to be ready
+    function waitForTauri(callback, maxAttempts = 50) {{
+        let attempts = 0;
+        const checkTauri = setInterval(() => {{
+            attempts++;
+            if (window.__TAURI__ && window.__TAURI__.shell) {{
+                clearInterval(checkTauri);
+                callback();
+            }} else if (attempts >= maxAttempts) {{
+                clearInterval(checkTauri);
+                console.warn('Tauri API not available after', maxAttempts, 'attempts. External link handling disabled.');
+            }}
+        }}, 100);
+    }}
+
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {{
+        document.addEventListener('DOMContentLoaded', () => waitForTauri(initExternalLinkHandler));
+    }} else {{
+        waitForTauri(initExternalLinkHandler);
+    }}
+
+    function initExternalLinkHandler() {{
+        // Get the base domain of the webapp
+        const webappUrl = new URL('{}');
+        const webappDomain = webappUrl.hostname;
+
+        // Function to check if a link should open externally
+        function shouldOpenExternally(link) {{
+            // Check if link has target="_blank" or similar
+            const target = link.getAttribute('target');
+            if (target && target !== '_self') {{
+                return true;
+            }}
+
+            // Check if link is to a different domain
+            try {{
+                const linkUrl = new URL(link.href);
+                if (linkUrl.hostname !== webappDomain) {{
+                    return true;
+                }}
+            }} catch (e) {{
+                // Invalid URL, let it handle normally
+                return false;
+            }}
+
+            return false;
+        }}
+
+        // Handle click events on links
+        document.addEventListener('click', function(e) {{
+            // Find the closest anchor element
+            let target = e.target;
+            while (target && target.tagName !== 'A') {{
+                target = target.parentElement;
+            }}
+
+            if (!target || target.tagName !== 'A') {{
+                return;
+            }}
+
+            // Check if this link should open externally
+            if (shouldOpenExternally(target)) {{
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Open in default browser using Tauri shell API
+                if (window.__TAURI__ && window.__TAURI__.shell) {{
+                    window.__TAURI__.shell.open(target.href).catch(err => {{
+                        console.error('Failed to open external link:', err);
+                    }});
+                }} else {{
+                    console.warn('Tauri shell API not available');
+                }}
+            }}
+        }}, true); // Use capture phase to intercept before other handlers
+
+        console.log('External link handler initialized for domain:', webappDomain);
+    }}
+}})();
+"#, webapp_url);
+
+        builder = builder.initialization_script(&external_links_script);
+    }
+
+    // OAuth support - when enabled, the webapp can handle OAuth flows
+    // The enable_oauth setting is stored and can be used for future OAuth-specific handling
+    // For now, OAuth flows work naturally within the webview with persistent sessions
+    if app.enable_oauth.unwrap_or(false) {
+        // OAuth is enabled for this webapp
+        // The persistent session (data_directory) already handles cookies and tokens
+        // Future enhancements could include:
+        // - Custom OAuth redirect handling
+        // - Token storage and management
+        // - OAuth-specific security policies
     }
 
     // Apply saved window state if available, otherwise use defaults

@@ -60,6 +60,8 @@ pub struct App {
     pub url: Option<String>,
     pub session_data_path: Option<String>,
     pub show_nav_controls: Option<bool>,
+    pub open_external_links: Option<bool>,
+    pub enable_oauth: Option<bool>,
 }
 
 /// Data for creating a new app
@@ -74,6 +76,8 @@ pub struct NewApp {
     pub cli_params: Option<String>,
     pub url: Option<String>,
     pub show_nav_controls: Option<bool>,
+    pub open_external_links: Option<bool>,
+    pub enable_oauth: Option<bool>,
 }
 
 /// Application settings
@@ -165,6 +169,8 @@ fn create_schema(conn: &Connection) -> Result<()> {
     let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN window_width INTEGER", []);
     let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN window_height INTEGER", []);
     let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN show_nav_controls INTEGER DEFAULT 0", []);
+    let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN open_external_links INTEGER DEFAULT 0", []);
+    let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN enable_oauth INTEGER DEFAULT 0", []);
 
     // Settings table
     conn.execute(
@@ -221,7 +227,7 @@ pub fn get_all_apps(pool: &DbPool) -> Result<Vec<App>> {
     let mut stmt = conn.prepare(
         "SELECT a.id, a.app_type, a.name, a.icon_path, a.position, a.shortcut, a.global_shortcut,
                 ad.binary_path, ad.cli_params,
-                wd.url, wd.session_data_path, wd.show_nav_controls
+                wd.url, wd.session_data_path, wd.show_nav_controls, wd.open_external_links, wd.enable_oauth
          FROM apps a
          LEFT JOIN app_details ad ON a.id = ad.app_id
          LEFT JOIN webapp_details wd ON a.id = wd.app_id
@@ -230,6 +236,8 @@ pub fn get_all_apps(pool: &DbPool) -> Result<Vec<App>> {
 
     let apps = stmt.query_map([], |row| {
         let show_nav_controls: Option<i32> = row.get(11).ok();
+        let open_external_links: Option<i32> = row.get(12).ok();
+        let enable_oauth: Option<i32> = row.get(13).ok();
         Ok(App {
             id: row.get(0)?,
             app_type: AppType::from_str(&row.get::<_, String>(1)?),
@@ -243,6 +251,8 @@ pub fn get_all_apps(pool: &DbPool) -> Result<Vec<App>> {
             url: row.get(9)?,
             session_data_path: row.get(10)?,
             show_nav_controls: show_nav_controls.map(|v| v != 0),
+            open_external_links: open_external_links.map(|v| v != 0),
+            enable_oauth: enable_oauth.map(|v| v != 0),
         })
     })?
     .collect::<Result<Vec<_>, _>>()?;
@@ -296,11 +306,20 @@ pub fn create_app(pool: &DbPool, new_app: NewApp, session_dir: Option<PathBuf>) 
                     .to_string();
 
                 let show_nav_controls = new_app.show_nav_controls.unwrap_or(false);
+                let open_external_links = new_app.open_external_links.unwrap_or(false);
+                let enable_oauth = new_app.enable_oauth.unwrap_or(false);
 
                 conn.execute(
-                    "INSERT INTO webapp_details (app_id, url, session_data_path, show_nav_controls)
-                     VALUES (?1, ?2, ?3, ?4)",
-                    params![app_id, url, session_path, if show_nav_controls { 1 } else { 0 }],
+                    "INSERT INTO webapp_details (app_id, url, session_data_path, show_nav_controls, open_external_links, enable_oauth)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                    params![
+                        app_id,
+                        url,
+                        session_path,
+                        if show_nav_controls { 1 } else { 0 },
+                        if open_external_links { 1 } else { 0 },
+                        if enable_oauth { 1 } else { 0 }
+                    ],
                 )?;
             }
         }
@@ -330,10 +349,18 @@ pub fn update_app(pool: &DbPool, app: App) -> Result<()> {
         }
         AppType::Webapp => {
             let show_nav_controls = app.show_nav_controls.unwrap_or(false);
+            let open_external_links = app.open_external_links.unwrap_or(false);
+            let enable_oauth = app.enable_oauth.unwrap_or(false);
             conn.execute(
-                "UPDATE webapp_details SET url = ?1, show_nav_controls = ?2
-                 WHERE app_id = ?3",
-                params![app.url, if show_nav_controls { 1 } else { 0 }, app.id],
+                "UPDATE webapp_details SET url = ?1, show_nav_controls = ?2, open_external_links = ?3, enable_oauth = ?4
+                 WHERE app_id = ?5",
+                params![
+                    app.url,
+                    if show_nav_controls { 1 } else { 0 },
+                    if open_external_links { 1 } else { 0 },
+                    if enable_oauth { 1 } else { 0 },
+                    app.id
+                ],
             )?;
         }
     }
