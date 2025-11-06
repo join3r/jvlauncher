@@ -7,11 +7,40 @@ use std::sync::Mutex;
 /// Global state to track registered app shortcuts
 static APP_SHORTCUTS: Mutex<Option<HashMap<String, i64>>> = Mutex::new(None);
 
+/// Global state to track app window labels by app ID
+static APP_WINDOWS: Mutex<Option<HashMap<i64, String>>> = Mutex::new(None);
+
 /// Initialize the app shortcuts map
 fn init_app_shortcuts() {
     let mut shortcuts = APP_SHORTCUTS.lock().unwrap();
     if shortcuts.is_none() {
         *shortcuts = Some(HashMap::new());
+    }
+}
+
+/// Initialize the app windows map
+fn init_app_windows() {
+    let mut windows = APP_WINDOWS.lock().unwrap();
+    if windows.is_none() {
+        *windows = Some(HashMap::new());
+    }
+}
+
+/// Register a window for an app (called when launching)
+pub fn register_app_window(app_id: i64, window_label: String) {
+    init_app_windows();
+    let mut windows = APP_WINDOWS.lock().unwrap();
+    if let Some(map) = windows.as_mut() {
+        map.insert(app_id, window_label);
+    }
+}
+
+/// Unregister a window for an app (called when window is closed)
+pub fn unregister_app_window(app_id: i64) {
+    init_app_windows();
+    let mut windows = APP_WINDOWS.lock().unwrap();
+    if let Some(map) = windows.as_mut() {
+        map.remove(&app_id);
     }
 }
 
@@ -60,6 +89,7 @@ pub fn register_app_shortcut(
     shortcut_str: &str,
 ) -> Result<()> {
     init_app_shortcuts();
+    init_app_windows();
 
     // Parse the shortcut string
     let shortcut: Shortcut = shortcut_str.parse()
@@ -79,7 +109,34 @@ pub fn register_app_shortcut(
         use tauri_plugin_global_shortcut::ShortcutState;
 
         if event.state() == ShortcutState::Pressed {
-            // Launch the app
+            // Check if the app's window is already open and focused
+            let window_label = {
+                let windows = APP_WINDOWS.lock().unwrap();
+                windows.as_ref()
+                    .and_then(|map| map.get(&app_id))
+                    .cloned()
+            };
+
+            if let Some(label) = window_label {
+                // Window exists, check if it's focused
+                if let Some(window) = app_handle_clone.get_webview_window(&label) {
+                    let is_focused = window.is_focused().unwrap_or(false);
+                    let is_visible = window.is_visible().unwrap_or(false);
+
+                    if is_focused && is_visible {
+                        // Window is focused, hide it (toggle off)
+                        let _ = window.hide();
+                        return;
+                    } else if is_visible {
+                        // Window is visible but not focused, focus it
+                        let _ = window.set_focus();
+                        return;
+                    }
+                    // If window exists but is hidden, fall through to launch
+                }
+            }
+
+            // Window doesn't exist or is hidden, launch the app
             let _ = app_handle_clone.emit("launch-app-by-shortcut", app_id);
         }
     })?;

@@ -524,6 +524,9 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
         tracker.register_window(window_label.clone(), app.auto_close_timeout);
     }
 
+    // Register window with shortcut manager for toggle behavior
+    crate::shortcut_manager::register_app_window(app.id, window_label.clone());
+
     // Set up event handler to save window state when it closes and handle auto-close
     let app_id = app.id;
     let pool_clone = pool.clone();
@@ -537,6 +540,9 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
                 if let Some(tracker) = app_handle_clone.try_state::<crate::webapp_auto_close::WebappActivityTracker>() {
                     tracker.unregister_window(&window_label_for_events);
                 }
+
+                // Unregister from shortcut manager
+                crate::shortcut_manager::unregister_app_window(app_id);
 
                 // Get the window's current position and size
                 if let Ok(position) = window_clone.outer_position() {
@@ -581,8 +587,19 @@ fn launch_tui(app: &App, app_handle: &AppHandle) -> Result<()> {
         vec![]
     };
 
+    // Create a unique window label for this TUI app
+    let window_label = format!("tui_{}", app.id);
+
+    // Check if window already exists
+    if let Some(existing_window) = app_handle.get_webview_window(&window_label) {
+        // If window exists, just show and focus it
+        existing_window.show()?;
+        existing_window.set_focus()?;
+        return Ok(());
+    }
+
     // Launch in terminal window
-    create_terminal_window(app_handle, &app.name, binary_path, &args)?;
+    create_terminal_window(app_handle, app.id, &window_label, &app.name, binary_path, &args)?;
 
     Ok(())
 }

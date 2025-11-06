@@ -8,11 +8,13 @@ use tauri::{AppHandle, Manager, Emitter};
 /// Create a terminal window and run a command in it
 pub fn create_terminal_window(
     app_handle: &AppHandle,
+    app_id: i64,
+    window_label: &str,
     title: &str,
     command: &str,
     args: &[String],
 ) -> Result<()> {
-    let window_label = format!("terminal_{}", uuid::Uuid::new_v4());
+    let window_label = window_label.to_string();
 
     // Create PTY with proper size
     let pty_system = native_pty_system();
@@ -94,6 +96,9 @@ pub fn create_terminal_window(
     .inner_size(800.0, 600.0)
     .build()?;
 
+    // Register window with shortcut manager for toggle behavior
+    crate::shortcut_manager::register_app_window(app_id, window_label.clone());
+
     // Store child process for cleanup
     let child = Arc::new(Mutex::new(child));
 
@@ -123,6 +128,9 @@ pub fn create_terminal_window(
                 let _ = child.kill();
             }
 
+            // Unregister from shortcut manager
+            crate::shortcut_manager::unregister_app_window(app_id);
+
             // Remove from terminal state
             if let Some(state) = app_handle_for_cleanup.try_state::<TerminalState>() {
                 if let Ok(mut windows) = state.windows.lock() {
@@ -144,22 +152,5 @@ pub struct TerminalState {
 pub struct TerminalHandle {
     pub writer: Arc<Mutex<Box<dyn std::io::Write + Send>>>,
     pub master: Arc<Mutex<Box<dyn portable_pty::MasterPty + Send>>>,
-}
-
-// UUID generation helper
-mod uuid {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    
-    pub struct Uuid;
-    
-    impl Uuid {
-        pub fn new_v4() -> String {
-            let nanos = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            format!("{:x}", nanos)
-        }
-    }
 }
 
