@@ -134,17 +134,18 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
             padding: 0 12px;
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            z-index: 999999;
+            z-index: 2147483647;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            pointer-events: auto;
         `;
 
         // Function to update nav bar theme
         function updateNavBarTheme() {{
             if (isDarkMode()) {{
-                navBar.style.background = 'rgba(44, 44, 46, 0.8)';
+                navBar.style.background = 'rgba(44, 44, 46, 0.95)';
                 navBar.style.borderBottom = '0.5px solid rgba(255, 255, 255, 0.1)';
             }} else {{
-                navBar.style.background = 'rgba(245, 245, 247, 0.8)';
+                navBar.style.background = 'rgba(245, 245, 247, 0.95)';
                 navBar.style.borderBottom = '0.5px solid rgba(0, 0, 0, 0.1)';
             }}
         }}
@@ -323,10 +324,78 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
 
         // Insert at the beginning of body
         if (document.body) {{
-            document.body.insertBefore(navBar, document.body.firstChild);
-            // Add padding to body to prevent content overlap
-            const currentPadding = parseInt(window.getComputedStyle(document.body).paddingTop) || 0;
-            document.body.style.paddingTop = (currentPadding + 44) + 'px';
+            // Append to body (not insertBefore) so it overlays on top
+            document.body.appendChild(navBar);
+
+            // Inject comprehensive styles to push all content down
+            const style = document.createElement('style');
+            style.id = 'jvlauncher-nav-spacing';
+            style.textContent = `
+                /* Ensure the nav bar stays on top of everything */
+                #jvlauncher-nav-bar {{
+                    z-index: 2147483647 !important;
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                }}
+
+                /* Push all body content down by 44px to make room for nav bar */
+                body {{
+                    padding-top: 44px !important;
+                    box-sizing: border-box !important;
+                }}
+
+                /* Adjust viewport height for fixed elements */
+                html {{
+                    scroll-padding-top: 44px !important;
+                }}
+            `;
+            document.head.appendChild(style);
+
+            // Function to adjust fixed/sticky/absolute positioned elements
+            function adjustFixedElements() {{
+                const allElements = document.querySelectorAll('*:not(#jvlauncher-nav-bar):not(#jvlauncher-nav-spacing)');
+                allElements.forEach(el => {{
+                    // Skip if already adjusted
+                    if (el.getAttribute('data-jvlauncher-adjusted') === 'true') {{
+                        return;
+                    }}
+
+                    const style = window.getComputedStyle(el);
+                    const position = style.position;
+
+                    if (position === 'fixed' || position === 'sticky' || position === 'absolute') {{
+                        const currentTop = style.top;
+                        const topValue = parseInt(currentTop) || 0;
+
+                        // Get the element's bounding rect to check if it's actually at the top
+                        const rect = el.getBoundingClientRect();
+
+                        // Adjust if element is at or near the top of viewport (within 50px)
+                        // This catches elements that might be slightly offset
+                        if (rect.top >= -10 && rect.top < 50) {{
+                            const newTop = (topValue + 44);
+                            el.style.top = newTop + 'px';
+                            el.setAttribute('data-jvlauncher-adjusted', 'true');
+                        }}
+                    }}
+                }});
+            }}
+
+            // Run adjustment multiple times to catch dynamically loaded content
+            setTimeout(adjustFixedElements, 50);
+            setTimeout(adjustFixedElements, 100);
+            setTimeout(adjustFixedElements, 300);
+            setTimeout(adjustFixedElements, 500);
+            setTimeout(adjustFixedElements, 1000);
+            setTimeout(adjustFixedElements, 2000);
+
+            // Also run on DOM changes
+            const observer = new MutationObserver(() => {{
+                setTimeout(adjustFixedElements, 50);
+            }});
+            observer.observe(document.body, {{ childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] }});
         }}
     }}
 }})();
