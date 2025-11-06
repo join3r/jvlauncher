@@ -10,6 +10,10 @@ static APP_SHORTCUTS: Mutex<Option<HashMap<String, i64>>> = Mutex::new(None);
 /// Global state to track app window labels by app ID
 static APP_WINDOWS: Mutex<Option<HashMap<i64, String>>> = Mutex::new(None);
 
+/// Global state to track the previously focused application (by bundle ID)
+/// This allows us to restore focus when hiding jvlauncher windows
+static PREVIOUS_APP: Mutex<Option<String>> = Mutex::new(None);
+
 /// Initialize the app shortcuts map
 fn init_app_shortcuts() {
     let mut shortcuts = APP_SHORTCUTS.lock().unwrap();
@@ -44,6 +48,42 @@ pub fn unregister_app_window(app_id: i64) {
     }
 }
 
+/// Capture the currently focused application before showing a jvlauncher window
+/// This allows us to restore focus later when hiding the window
+fn capture_previous_app() {
+    if let Some(bundle_id) = crate::macos_delegate::get_frontmost_app_bundle_id() {
+        let mut previous = PREVIOUS_APP.lock().unwrap();
+        *previous = Some(bundle_id);
+    }
+}
+
+/// Public function to capture the currently focused application
+/// This can be called from other modules before showing windows
+pub fn capture_current_app() {
+    capture_previous_app();
+}
+
+/// Restore focus to the previously focused application
+/// Returns true if focus was restored, false otherwise
+fn restore_previous_app() -> bool {
+    let bundle_id = {
+        let previous = PREVIOUS_APP.lock().unwrap();
+        previous.clone()
+    };
+
+    if let Some(bundle_id) = bundle_id {
+        crate::macos_delegate::activate_app_by_bundle_id(&bundle_id)
+    } else {
+        false
+    }
+}
+
+/// Public function to restore focus to the previously focused application
+/// This can be called from other modules when hiding windows
+pub fn restore_focus_to_previous_app() {
+    restore_previous_app();
+}
+
 /// Register a global shortcut to toggle the main window
 pub fn register_global_shortcut(
     app_handle: &AppHandle,
@@ -69,8 +109,12 @@ pub fn register_global_shortcut(
                 let is_visible = window.is_visible().unwrap_or(false);
 
                 if is_visible {
+                    // Window is visible, hide it and restore focus to previous app
                     let _ = window.hide();
+                    restore_previous_app();
                 } else {
+                    // Window is hidden, capture current app before showing
+                    capture_previous_app();
                     let _ = window.show();
                     let _ = window.set_focus();
                     let _ = window.center();
@@ -124,11 +168,13 @@ pub fn register_app_shortcut(
                     let is_visible = window.is_visible().unwrap_or(false);
 
                     if is_focused && is_visible {
-                        // Window is focused, hide it (toggle off)
+                        // Window is focused, hide it (toggle off) and restore previous app
                         let _ = window.hide();
+                        restore_previous_app();
                         return;
                     } else if is_visible {
-                        // Window is visible but not focused, focus it
+                        // Window is visible but not focused, capture current app then focus it
+                        capture_previous_app();
                         let _ = window.set_focus();
                         return;
                     }
@@ -136,7 +182,8 @@ pub fn register_app_shortcut(
                 }
             }
 
-            // Window doesn't exist or is hidden, launch the app
+            // Window doesn't exist or is hidden, capture current app then launch
+            capture_previous_app();
             let _ = app_handle_clone.emit("launch-app-by-shortcut", app_id);
         }
     })?;

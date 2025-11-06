@@ -73,7 +73,8 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
 
     // Check if window already exists
     if let Some(existing_window) = app_handle.get_webview_window(&window_label) {
-        // If window exists, just show and focus it
+        // If window exists, capture current app then show and focus it
+        crate::shortcut_manager::capture_current_app();
         existing_window.show()?;
         existing_window.set_focus()?;
         return Ok(());
@@ -517,6 +518,9 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
             .center();
     }
 
+    // Capture the current app before creating and showing the window
+    crate::shortcut_manager::capture_current_app();
+
     let window = builder.build()?;
 
     // Register window with activity tracker for auto-close feature
@@ -592,11 +596,15 @@ fn launch_tui(app: &App, app_handle: &AppHandle) -> Result<()> {
 
     // Check if window already exists
     if let Some(existing_window) = app_handle.get_webview_window(&window_label) {
-        // If window exists, just show and focus it
+        // If window exists, capture current app then show and focus it
+        crate::shortcut_manager::capture_current_app();
         existing_window.show()?;
         existing_window.set_focus()?;
         return Ok(());
     }
+
+    // Capture the current app before creating and showing the terminal window
+    crate::shortcut_manager::capture_current_app();
 
     // Launch in terminal window
     create_terminal_window(app_handle, app.id, &window_label, &app.name, binary_path, &args)?;

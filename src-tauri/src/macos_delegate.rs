@@ -70,3 +70,108 @@ pub fn prevent_app_termination() {
     // No-op on non-macOS platforms
 }
 
+/// Get the bundle identifier of the currently frontmost (focused) application
+/// Returns None if we can't determine the frontmost app or if it's jvlauncher itself
+#[cfg(target_os = "macos")]
+pub fn get_frontmost_app_bundle_id() -> Option<String> {
+    unsafe {
+        // Get shared workspace
+        let workspace: id = msg_send![class!(NSWorkspace), sharedWorkspace];
+        if workspace == nil {
+            return None;
+        }
+
+        // Get frontmost application
+        let frontmost_app: id = msg_send![workspace, frontmostApplication];
+        if frontmost_app == nil {
+            return None;
+        }
+
+        // Get bundle identifier
+        let bundle_id: id = msg_send![frontmost_app, bundleIdentifier];
+        if bundle_id == nil {
+            return None;
+        }
+
+        // Convert NSString to Rust String
+        let bundle_id_str: *const i8 = msg_send![bundle_id, UTF8String];
+        if bundle_id_str.is_null() {
+            return None;
+        }
+
+        let bundle_id_string = std::ffi::CStr::from_ptr(bundle_id_str)
+            .to_string_lossy()
+            .to_string();
+
+        // Don't track if the frontmost app is jvlauncher itself
+        if bundle_id_string == "com.jvlauncher.app" {
+            return None;
+        }
+
+        Some(bundle_id_string)
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn get_frontmost_app_bundle_id() -> Option<String> {
+    None
+}
+
+/// Activate (bring to front) an application by its bundle identifier
+/// Returns true if successful, false otherwise
+#[cfg(target_os = "macos")]
+pub fn activate_app_by_bundle_id(bundle_id: &str) -> bool {
+    unsafe {
+        // Get shared workspace
+        let workspace: id = msg_send![class!(NSWorkspace), sharedWorkspace];
+        if workspace == nil {
+            return false;
+        }
+
+        // Get all running applications
+        let running_apps: id = msg_send![workspace, runningApplications];
+        if running_apps == nil {
+            return false;
+        }
+
+        // Get the count of running applications
+        let count: usize = msg_send![running_apps, count];
+
+        // Convert bundle_id to NSString
+        let bundle_id_nsstring: id = msg_send![class!(NSString), stringWithUTF8String: bundle_id.as_ptr()];
+        if bundle_id_nsstring == nil {
+            return false;
+        }
+
+        // Iterate through running applications to find the one with matching bundle ID
+        for i in 0..count {
+            let app: id = msg_send![running_apps, objectAtIndex: i];
+            if app == nil {
+                continue;
+            }
+
+            let app_bundle_id: id = msg_send![app, bundleIdentifier];
+            if app_bundle_id == nil {
+                continue;
+            }
+
+            // Compare bundle IDs
+            let is_equal: bool = msg_send![app_bundle_id, isEqualToString: bundle_id_nsstring];
+            if is_equal {
+                // Found the app, activate it
+                // NSApplicationActivateIgnoringOtherApps = 1 << 1 = 2
+                let options: usize = 2;
+                let success: bool = msg_send![app, activateWithOptions: options];
+                return success;
+            }
+        }
+
+        false
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn activate_app_by_bundle_id(_bundle_id: &str) -> bool {
+    false
+}
+

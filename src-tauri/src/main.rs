@@ -144,13 +144,15 @@ fn main() {
                     tauri::WindowEvent::CloseRequested { api, .. } => {
                         // Prevent default close behavior
                         api.prevent_close();
-                        // Hide window instead
+                        // Hide window instead and restore focus to previous app
                         let _ = window_clone.hide();
+                        shortcut_manager::restore_focus_to_previous_app();
                     }
                     tauri::WindowEvent::Focused(focused) => {
-                        // Hide window when it loses focus
+                        // Hide window when it loses focus and restore focus to previous app
                         if !focused {
                             let _ = window_clone.hide();
+                            shortcut_manager::restore_focus_to_previous_app();
                         }
                     }
                     _ => {}
@@ -173,6 +175,8 @@ fn main() {
                     match event.id().as_ref() {
                         "show" => {
                             if let Some(window) = app.get_webview_window("main") {
+                                // Capture current app before showing
+                                shortcut_manager::capture_current_app();
                                 let _ = window.show();
                                 let _ = window.set_focus();
                             }
@@ -191,7 +195,10 @@ fn main() {
                             if let Some(window) = app.get_webview_window("main") {
                                 if window.is_visible().unwrap_or(false) {
                                     let _ = window.hide();
+                                    shortcut_manager::restore_focus_to_previous_app();
                                 } else {
+                                    // Capture current app before showing
+                                    shortcut_manager::capture_current_app();
                                     let _ = window.show();
                                     let _ = window.set_focus();
                                 }
