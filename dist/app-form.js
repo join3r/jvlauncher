@@ -409,14 +409,23 @@ function updateAutoCloseTimeoutVisibility() {
     const enableCheckbox = document.getElementById('enable-auto-close');
     const timeoutContainer = document.getElementById('auto-close-timeout-container');
     const timeoutInput = document.getElementById('auto-close-timeout');
+    const timeoutLabels = timeoutContainer ? timeoutContainer.querySelectorAll('span') : [];
 
     if (enableCheckbox && timeoutContainer && timeoutInput) {
         if (enableCheckbox.checked) {
-            timeoutContainer.style.display = 'flex';
+            // Enabled state - normal appearance
             timeoutInput.disabled = false;
+            timeoutInput.style.opacity = '1';
+            timeoutLabels.forEach(label => {
+                label.style.opacity = '1';
+            });
         } else {
-            timeoutContainer.style.display = 'none';
+            // Disabled state - grayed out
             timeoutInput.disabled = true;
+            timeoutInput.style.opacity = '0.5';
+            timeoutLabels.forEach(label => {
+                label.style.opacity = '0.5';
+            });
         }
     }
 }
