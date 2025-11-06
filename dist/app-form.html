@@ -225,6 +225,19 @@
                 </label>
             </div>
 
+            <div class="form-label" id="auto-close-label" style="display: none;">Auto-Close on Inactivity</div>
+            <div class="form-control" id="auto-close-group" style="display: none; flex-direction: column; align-items: flex-start; gap: 6px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="enable-auto-close" style="width: auto; height: auto; margin: 0;">
+                    <span style="font-size: 13px;">Enable auto-close on inactivity</span>
+                </label>
+                <div style="display: flex; gap: 6px; align-items: center; margin-left: 22px; flex-wrap: nowrap;" id="auto-close-timeout-container">
+                    <span style="font-size: 13px; white-space: nowrap;">Close after</span>
+                    <input type="number" id="auto-close-timeout" placeholder="10" min="0" value="10" style="width: 60px;">
+                    <span style="font-size: 13px; white-space: nowrap;">minutes (0 = close immediately)</span>
+                </div>
+            </div>
+
             <div class="form-label" id="binary-label">Binary Path</div>
             <div class="form-control" id="binary-group">
                 <input type="text" id="app-binary" placeholder="/path/to/binary" style="flex: 1;">

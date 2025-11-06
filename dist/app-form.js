@@ -404,6 +404,23 @@ async function fetchWebIcon(url) {
     }
 }
 
+// Update auto-close timeout input visibility based on checkbox state
+function updateAutoCloseTimeoutVisibility() {
+    const enableCheckbox = document.getElementById('enable-auto-close');
+    const timeoutContainer = document.getElementById('auto-close-timeout-container');
+    const timeoutInput = document.getElementById('auto-close-timeout');
+
+    if (enableCheckbox && timeoutContainer && timeoutInput) {
+        if (enableCheckbox.checked) {
+            timeoutContainer.style.display = 'flex';
+            timeoutInput.disabled = false;
+        } else {
+            timeoutContainer.style.display = 'none';
+            timeoutInput.disabled = true;
+        }
+    }
+}
+
 // Update field visibility based on app type
 function updateFieldsVisibility() {
     const type = getTypeFromSegment();
@@ -416,6 +433,8 @@ function updateFieldsVisibility() {
     const externalLinksGroup = document.getElementById('external-links-group');
     const oauthLabel = document.getElementById('oauth-label');
     const oauthGroup = document.getElementById('oauth-group');
+    const autoCloseLabel = document.getElementById('auto-close-label');
+    const autoCloseGroup = document.getElementById('auto-close-group');
     const binaryLabel = document.getElementById('binary-label');
     const binaryGroup = document.getElementById('binary-group');
     const paramsLabel = document.getElementById('params-label');
@@ -430,6 +449,8 @@ function updateFieldsVisibility() {
         externalLinksGroup.style.display = 'flex';
         oauthLabel.style.display = 'block';
         oauthGroup.style.display = 'flex';
+        autoCloseLabel.style.display = 'block';
+        autoCloseGroup.style.display = 'flex';
         binaryLabel.style.display = 'none';
         binaryGroup.style.display = 'none';
         paramsLabel.style.display = 'none';
@@ -443,11 +464,16 @@ function updateFieldsVisibility() {
         externalLinksGroup.style.display = 'none';
         oauthLabel.style.display = 'none';
         oauthGroup.style.display = 'none';
+        autoCloseLabel.style.display = 'none';
+        autoCloseGroup.style.display = 'none';
         binaryLabel.style.display = 'block';
         binaryGroup.style.display = 'flex';
         paramsLabel.style.display = 'block';
         paramsGroup.style.display = 'flex';
     }
+
+    // Update auto-close timeout visibility
+    updateAutoCloseTimeoutVisibility();
 
     // Auto-resize window when field visibility changes
     // Use requestAnimationFrame to ensure DOM has updated
@@ -483,11 +509,28 @@ async function loadAppData() {
                 document.getElementById('app-binary').value = appData.binary_path || '';
                 document.getElementById('app-params').value = appData.cli_params || '';
 
-                // Set webapp-specific checkboxes
+                // Set webapp-specific checkboxes and fields
                 if (appData.app_type === 'webapp') {
                     document.getElementById('show-nav-controls').checked = appData.show_nav_controls || false;
                     document.getElementById('open-external-links').checked = appData.open_external_links || false;
                     document.getElementById('enable-oauth').checked = appData.enable_oauth || false;
+
+                    // Set auto-close timeout
+                    const enableAutoCloseCheckbox = document.getElementById('enable-auto-close');
+                    const autoCloseInput = document.getElementById('auto-close-timeout');
+
+                    if (appData.auto_close_timeout !== null && appData.auto_close_timeout !== undefined) {
+                        // Feature is enabled
+                        enableAutoCloseCheckbox.checked = true;
+                        autoCloseInput.value = appData.auto_close_timeout;
+                    } else {
+                        // Feature is disabled
+                        enableAutoCloseCheckbox.checked = false;
+                        autoCloseInput.value = '10'; // Default value
+                    }
+
+                    // Update visibility based on checkbox state
+                    updateAutoCloseTimeoutVisibility();
                 }
 
                 // Store raw shortcut values and display formatted versions
@@ -677,6 +720,21 @@ async function saveApp() {
             const showNavControls = appType === 'webapp' ? document.getElementById('show-nav-controls').checked : null;
             const openExternalLinks = appType === 'webapp' ? document.getElementById('open-external-links').checked : null;
             const enableOauth = appType === 'webapp' ? document.getElementById('enable-oauth').checked : null;
+
+            // Get auto-close timeout (null if disabled, otherwise the number value)
+            let autoCloseTimeout = null;
+            if (appType === 'webapp') {
+                const enableAutoClose = document.getElementById('enable-auto-close').checked;
+                if (enableAutoClose) {
+                    const autoCloseValue = document.getElementById('auto-close-timeout').value.trim();
+                    if (autoCloseValue !== '') {
+                        autoCloseTimeout = parseInt(autoCloseValue, 10);
+                    } else {
+                        autoCloseTimeout = 10; // Default to 10 minutes if enabled but no value
+                    }
+                }
+            }
+
             await invoke('update_app', {
                 app: {
                     id: appData.id,
@@ -692,7 +750,8 @@ async function saveApp() {
                     session_data_path: appData.session_data_path,
                     show_nav_controls: showNavControls,
                     open_external_links: openExternalLinks,
-                    enable_oauth: enableOauth
+                    enable_oauth: enableOauth,
+                    auto_close_timeout: autoCloseTimeout
                 }
             });
         } else {
@@ -700,6 +759,21 @@ async function saveApp() {
             const showNavControls = appType === 'webapp' ? document.getElementById('show-nav-controls').checked : null;
             const openExternalLinks = appType === 'webapp' ? document.getElementById('open-external-links').checked : null;
             const enableOauth = appType === 'webapp' ? document.getElementById('enable-oauth').checked : null;
+
+            // Get auto-close timeout (null if disabled, otherwise the number value)
+            let autoCloseTimeout = null;
+            if (appType === 'webapp') {
+                const enableAutoClose = document.getElementById('enable-auto-close').checked;
+                if (enableAutoClose) {
+                    const autoCloseValue = document.getElementById('auto-close-timeout').value.trim();
+                    if (autoCloseValue !== '') {
+                        autoCloseTimeout = parseInt(autoCloseValue, 10);
+                    } else {
+                        autoCloseTimeout = 10; // Default to 10 minutes if enabled but no value
+                    }
+                }
+            }
+
             await invoke('create_app', {
                 newApp: {
                     app_type: appType,
@@ -712,7 +786,8 @@ async function saveApp() {
                     url: url || null,
                     show_nav_controls: showNavControls,
                     open_external_links: openExternalLinks,
-                    enable_oauth: enableOauth
+                    enable_oauth: enableOauth,
+                    auto_close_timeout: autoCloseTimeout
                 }
             });
         }
@@ -917,6 +992,14 @@ async function init() {
             clearGlobalBtn.addEventListener('click', () => {
                 globalShortcutInput.value = '';
                 globalShortcutInput.dataset.rawValue = '';
+            });
+        }
+
+        // Auto-close checkbox handler
+        const enableAutoCloseCheckbox = document.getElementById('enable-auto-close');
+        if (enableAutoCloseCheckbox) {
+            enableAutoCloseCheckbox.addEventListener('change', () => {
+                updateAutoCloseTimeoutVisibility();
             });
         }
 

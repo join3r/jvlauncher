@@ -9,6 +9,7 @@ mod launcher;
 mod shortcut_manager;
 mod terminal;
 mod updater;
+mod webapp_auto_close;
 
 #[cfg(target_os = "macos")]
 mod macos_delegate;
@@ -64,6 +65,10 @@ fn main() {
             app.manage(terminal::TerminalState {
                 windows: std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
             });
+
+            // Initialize webapp activity tracker
+            let activity_tracker = webapp_auto_close::WebappActivityTracker::new(app.handle().clone());
+            app.manage(activity_tracker);
 
             // Get settings and register global shortcut
             if let Ok(settings) = database::get_settings(&pool) {

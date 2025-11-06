@@ -519,25 +519,48 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
 
     let window = builder.build()?;
 
-    // Set up event handler to save window state when it closes
+    // Register window with activity tracker for auto-close feature
+    if let Some(tracker) = app_handle.try_state::<crate::webapp_auto_close::WebappActivityTracker>() {
+        tracker.register_window(window_label.clone(), app.auto_close_timeout);
+    }
+
+    // Set up event handler to save window state when it closes and handle auto-close
     let app_id = app.id;
     let pool_clone = pool.clone();
     let window_clone = window.clone();
+    let window_label_for_events = window_label.clone();
+    let app_handle_clone = app_handle.clone();
     window.on_window_event(move |event| {
-        if let tauri::WindowEvent::CloseRequested { .. } = event {
-            // Get the window's current position and size
-            if let Ok(position) = window_clone.outer_position() {
-                if let Ok(size) = window_clone.outer_size() {
-                    let state = crate::database::WindowState {
-                        x: position.x,
-                        y: position.y,
-                        width: size.width as i32,
-                        height: size.height as i32,
-                    };
-                    // Save the window state to database
-                    let _ = crate::database::save_window_state(&pool_clone, app_id, &state);
+        match event {
+            tauri::WindowEvent::CloseRequested { .. } => {
+                // Unregister from activity tracker
+                if let Some(tracker) = app_handle_clone.try_state::<crate::webapp_auto_close::WebappActivityTracker>() {
+                    tracker.unregister_window(&window_label_for_events);
+                }
+
+                // Get the window's current position and size
+                if let Ok(position) = window_clone.outer_position() {
+                    if let Ok(size) = window_clone.outer_size() {
+                        let state = crate::database::WindowState {
+                            x: position.x,
+                            y: position.y,
+                            width: size.width as i32,
+                            height: size.height as i32,
+                        };
+                        // Save the window state to database
+                        let _ = crate::database::save_window_state(&pool_clone, app_id, &state);
+                    }
                 }
             }
+            tauri::WindowEvent::Focused(focused) => {
+                // Update activity tracker when window gains focus
+                if *focused {
+                    if let Some(tracker) = app_handle_clone.try_state::<crate::webapp_auto_close::WebappActivityTracker>() {
+                        tracker.update_activity(&window_label_for_events);
+                    }
+                }
+            }
+            _ => {}
         }
     });
 
