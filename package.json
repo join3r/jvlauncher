@@ -1,6 +1,6 @@
 {
   "name": "jvlauncher",
-  "version": "0.1.0",
+  "version": "0.1.7",
   "description": "A cross-platform application launcher",
   "private": true,
   "scripts": {
