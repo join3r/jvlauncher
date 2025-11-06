@@ -145,26 +145,38 @@ sign_file() {
     local file_path=$1
     local signature_path="${file_path}.sig"
 
-    print_info "Signing $file_path..."
+    print_info "Signing $file_path..." >&2
 
     # Read the password if not set
     if [ -z "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]; then
-        print_info "Password not set in environment variable"
-        print_info "Set it with: export TAURI_SIGNING_PRIVATE_KEY_PASSWORD='your-password'"
+        print_info "Password not set in environment variable" >&2
+        print_info "Set it with: export TAURI_SIGNING_PRIVATE_KEY_PASSWORD='your-password'" >&2
         print_error "Please set TAURI_SIGNING_PRIVATE_KEY_PASSWORD environment variable"
         exit 1
     fi
 
-    # Sign the file using cargo tauri signer
+    # Sign the file using minisign directly (workaround for Tauri CLI bug)
     local sign_output
-    sign_output=$(cargo tauri signer sign "$file_path" -k "$TAURI_KEY_PATH" -p "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" 2>&1)
+    local minisig_path="${file_path}.minisig"
+
+    # Use minisign to sign the file
+    sign_output=$(echo "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" | minisign -S -s "$TAURI_KEY_PATH" -m "$file_path" 2>&1)
     local sign_exit_code=$?
 
     if [ $sign_exit_code -ne 0 ]; then
-        print_error "Failed to sign file"
-        echo "$sign_output"
+        print_error "Failed to sign file with minisign"
+        echo "$sign_output" >&2
         return 1
     fi
+
+    # Check if minisig file was created
+    if [ ! -f "$minisig_path" ]; then
+        print_error "Minisig file not created at $minisig_path"
+        return 1
+    fi
+
+    # Tauri expects the entire minisig file base64-encoded as the signature
+    base64 < "$minisig_path" | tr -d '\n' > "$signature_path"
 
     if [ ! -f "$signature_path" ]; then
         print_error "Signature file not created at $signature_path"
@@ -280,18 +292,58 @@ main() {
     fi
     
     print_success "Found DMG: $DMG_FILE"
-    
-    # Sign the DMG (optional)
-    print_header "Signing DMG"
+
+    # Find the .app bundle for the updater
+    print_header "Creating Update Archive"
+
+    APP_FILE=$(find target/release/bundle/macos -name "*.app" 2>/dev/null | head -1)
+
+    if [ -z "$APP_FILE" ]; then
+        APP_FILE=$(find src-tauri/target/release/bundle/macos -name "*.app" 2>/dev/null | head -1)
+    fi
+
+    if [ -z "$APP_FILE" ]; then
+        print_error ".app bundle not found"
+        exit 1
+    fi
+
+    print_success "Found .app bundle: $APP_FILE"
+
+    APP_DIR=$(dirname "$APP_FILE")
+    APP_BASENAME=$(basename "$APP_FILE")
+    DMG_DIR=$(dirname "$DMG_FILE")
+    DMG_BASENAME=$(basename "$DMG_FILE")
+
+    # Create tar.gz of the .app bundle (Tauri expects the .app, not the DMG)
+    # Use the same naming as the DMG for consistency
+    TAR_GZ_BASENAME="${DMG_BASENAME}.tar.gz"
+    TAR_GZ_FILE="${DMG_DIR}/${TAR_GZ_BASENAME}"
+
+    print_info "Creating tar.gz archive of .app bundle..."
+    # Use absolute paths to avoid issues
+    ABSOLUTE_APP_DIR=$(cd "$APP_DIR" && pwd)
+    ABSOLUTE_TAR_GZ_FILE=$(cd "$DMG_DIR" && pwd)/"$TAR_GZ_BASENAME"
+
+    cd "$ABSOLUTE_APP_DIR"
+    # Use COPYFILE_DISABLE to prevent macOS metadata files (._*) from being included
+    COPYFILE_DISABLE=1 tar -czf "$ABSOLUTE_TAR_GZ_FILE" "$APP_BASENAME"
+    cd - > /dev/null
+
+    TAR_GZ_FILE="$ABSOLUTE_TAR_GZ_FILE"
+
+    print_success "Created archive: $TAR_GZ_FILE"
+
+    # Sign the tar.gz file (not the DMG)
+    print_header "Signing Update Archive"
 
     if [ -n "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]; then
-        SIGNATURE=$(sign_file "$DMG_FILE")
+        SIGNATURE=$(sign_file "$TAR_GZ_FILE")
 
         if [ -z "$SIGNATURE" ]; then
-            print_warning "Failed to sign DMG - continuing without signature"
+            print_warning "Failed to sign archive - continuing without signature"
             SIGNATURE=""
         else
-            print_success "DMG signed successfully"
+            print_success "Archive signed successfully"
             print_info "Signature: ${SIGNATURE:0:50}..."
         fi
     else
@@ -301,17 +353,18 @@ main() {
     
     # Create GitHub release
     print_header "Creating GitHub Release"
-    
+
     TAG="v$VERSION"
     RELEASE_NAME="jvlauncher v$VERSION"
     DMG_FILENAME=$(basename "$DMG_FILE")
-    
+    TAR_GZ_FILENAME=$(basename "$TAR_GZ_FILE")
+
     # Check if release already exists
     if gh release view "$TAG" &> /dev/null; then
         print_warning "Release $TAG already exists"
         read -p "$(echo -e ${YELLOW}?${NC}) Delete and recreate? (y/N): " -n 1 -r
         echo ""
-        
+
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             print_info "Deleting existing release..."
             gh release delete "$TAG" -y
@@ -321,26 +374,28 @@ main() {
             exit 1
         fi
     fi
-    
+
     print_info "Creating release $TAG..."
-    
+
     gh release create "$TAG" \
         --title "$RELEASE_NAME" \
         --notes "## What's Changed
 
 Download for Apple Silicon Macs (M1/M2/M3/M4):
-- \`$DMG_FILENAME\`
+- \`$DMG_FILENAME\` (installer)
+- \`$TAR_GZ_FILENAME\` (auto-update package)
 
 See the assets below to download and install this version." \
-        "$DMG_FILE"
-    
+        "$DMG_FILE" \
+        "$TAR_GZ_FILE"
+
     print_success "Release created"
-    
+
     # Create and upload updater JSON
     print_header "Creating Updater JSON"
-    
-    DMG_URL="https://github.com/$REPO/releases/download/$TAG/$DMG_FILENAME"
-    create_updater_json "$VERSION" "$DMG_URL" "$SIGNATURE"
+
+    TAR_GZ_URL="https://github.com/$REPO/releases/download/$TAG/$TAR_GZ_FILENAME"
+    create_updater_json "$VERSION" "$TAR_GZ_URL" "$SIGNATURE"
     
     print_info "Uploading latest.json to release..."
     gh release upload "$TAG" latest.json --clobber

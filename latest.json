@@ -1,10 +1,10 @@
 {
-  "version": "0.1.5",
-  "date": "2025-11-04T22:30:36Z",
+  "version": "0.1.7",
+  "date": "2025-11-06T10:05:44Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "",
-      "url": "https://github.com/join3r/jvlauncher/releases/download/v0.1.5/jvlauncher_0.1.5_aarch64.dmg"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIG1pbmlzaWduIHNlY3JldCBrZXkKUlVRQzJIRm1kQ1FuUzdjdGV1ektYcWNzazFpWEh3Ykp3VGpYOVZkczRPTHpjS3hYaENWN1lORkc2dS9EWlZpT3hYZkIxOEFhN3l6V2N0aDJTUDdtRFpOY2pkSnJPdFpkV2cwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyNDIzNTM5CWZpbGU6anZsYXVuY2hlcl8wLjEuN19hYXJjaDY0LmRtZy50YXIuZ3oJaGFzaGVkCndQNWpNQnExTUJoTkdLWTNyUjhIejJaRUI1RXlhWnV3UzVkelphK1Zua2ljZzlVQVB4ZmNyWmdLK0RTQWExQ3J5cWNFc0V3THRocG9MR0VKdzdlM0R3PT0K",
+      "url": "https://github.com/join3r/jvlauncher/releases/download/v0.1.7/jvlauncher_0.1.7_aarch64.dmg.tar.gz"
     }
   }
 }
