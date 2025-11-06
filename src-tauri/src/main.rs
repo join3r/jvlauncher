@@ -237,6 +237,9 @@ fn main() {
             commands::auto_resize_window,
             commands::send_terminal_input,
             commands::resize_terminal,
+            commands::webapp_navigate_back,
+            commands::webapp_navigate_forward,
+            commands::webapp_navigate_home,
             updater::check_for_updates,
             updater::download_and_install_update,
         ])

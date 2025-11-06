@@ -410,6 +410,8 @@ function updateFieldsVisibility() {
     // Show/hide both label and control for each field
     const urlLabel = document.getElementById('url-label');
     const urlGroup = document.getElementById('url-group');
+    const navControlsLabel = document.getElementById('nav-controls-label');
+    const navControlsGroup = document.getElementById('nav-controls-group');
     const binaryLabel = document.getElementById('binary-label');
     const binaryGroup = document.getElementById('binary-group');
     const paramsLabel = document.getElementById('params-label');
@@ -418,6 +420,8 @@ function updateFieldsVisibility() {
     if (type === 'webapp') {
         urlLabel.style.display = 'block';
         urlGroup.style.display = 'flex';
+        navControlsLabel.style.display = 'block';
+        navControlsGroup.style.display = 'flex';
         binaryLabel.style.display = 'none';
         binaryGroup.style.display = 'none';
         paramsLabel.style.display = 'none';
@@ -425,6 +429,8 @@ function updateFieldsVisibility() {
     } else {
         urlLabel.style.display = 'none';
         urlGroup.style.display = 'none';
+        navControlsLabel.style.display = 'none';
+        navControlsGroup.style.display = 'none';
         binaryLabel.style.display = 'block';
         binaryGroup.style.display = 'flex';
         paramsLabel.style.display = 'block';
@@ -464,6 +470,11 @@ async function loadAppData() {
                 document.getElementById('app-url').value = appData.url || '';
                 document.getElementById('app-binary').value = appData.binary_path || '';
                 document.getElementById('app-params').value = appData.cli_params || '';
+
+                // Set navigation controls checkbox for webapps
+                if (appData.app_type === 'webapp') {
+                    document.getElementById('show-nav-controls').checked = appData.show_nav_controls || false;
+                }
 
                 // Store raw shortcut values and display formatted versions
                 const shortcutInput = document.getElementById('app-shortcut');
@@ -649,6 +660,7 @@ async function saveApp() {
 
         if (isEditMode && appData) {
             // Update existing app
+            const showNavControls = appType === 'webapp' ? document.getElementById('show-nav-controls').checked : null;
             await invoke('update_app', {
                 app: {
                     id: appData.id,
@@ -661,11 +673,13 @@ async function saveApp() {
                     binary_path: binaryPath || null,
                     cli_params: cliParams || null,
                     url: url || null,
-                    session_data_path: appData.session_data_path
+                    session_data_path: appData.session_data_path,
+                    show_nav_controls: showNavControls
                 }
             });
         } else {
             // Create new app
+            const showNavControls = appType === 'webapp' ? document.getElementById('show-nav-controls').checked : null;
             await invoke('create_app', {
                 newApp: {
                     app_type: appType,
@@ -675,7 +689,8 @@ async function saveApp() {
                     global_shortcut: globalShortcut || null,
                     binary_path: binaryPath || null,
                     cli_params: cliParams || null,
-                    url: url || null
+                    url: url || null,
+                    show_nav_controls: showNavControls
                 }
             });
         }

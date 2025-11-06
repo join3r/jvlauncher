@@ -92,6 +92,162 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
     .resizable(true)
     .data_directory(std::path::PathBuf::from(session_path));
 
+    // Add navigation bar initialization script if enabled (runs on every page load)
+    if app.show_nav_controls.unwrap_or(false) {
+        let original_url = url.clone();
+        let nav_script = format!(r#"
+(function() {{
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {{
+        document.addEventListener('DOMContentLoaded', initNavBar);
+    }} else {{
+        initNavBar();
+    }}
+
+    function initNavBar() {{
+        // Check if nav bar already exists (to prevent duplicates on page navigation)
+        if (document.getElementById('jvlauncher-nav-bar')) {{
+            return;
+        }}
+
+        // Create navigation bar
+        const navBar = document.createElement('div');
+        navBar.id = 'jvlauncher-nav-bar';
+        navBar.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+            background: rgba(245, 245, 247, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
+            z-index: 999999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+
+        // Dark mode support
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {{
+            navBar.style.background = 'rgba(44, 44, 46, 0.8)';
+            navBar.style.borderBottom = '0.5px solid rgba(255, 255, 255, 0.1)';
+        }}
+
+        // Create button helper
+        function createButton(text, onClick) {{
+            const btn = document.createElement('button');
+            btn.textContent = text;
+            btn.style.cssText = `
+                appearance: none;
+                border: none;
+                background: rgba(0, 0, 0, 0.05);
+                color: #1d1d1f;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 14px;
+                cursor: pointer;
+                transition: background 0.15s;
+                font-weight: 500;
+            `;
+
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {{
+                btn.style.background = 'rgba(255, 255, 255, 0.1)';
+                btn.style.color = '#f5f5f7';
+            }}
+
+            btn.addEventListener('mouseenter', () => {{
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {{
+                    btn.style.background = 'rgba(255, 255, 255, 0.15)';
+                }} else {{
+                    btn.style.background = 'rgba(0, 0, 0, 0.08)';
+                }}
+            }});
+
+            btn.addEventListener('mouseleave', () => {{
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {{
+                    btn.style.background = 'rgba(255, 255, 255, 0.1)';
+                }} else {{
+                    btn.style.background = 'rgba(0, 0, 0, 0.05)';
+                }}
+            }});
+
+            btn.addEventListener('click', onClick);
+            return btn;
+        }}
+
+        // Create buttons
+        const backBtn = createButton('←', () => window.history.back());
+        const forwardBtn = createButton('→', () => window.history.forward());
+        const homeBtn = createButton('⌂', () => window.location.href = '{}');
+
+        // Create URL display
+        const urlDisplay = document.createElement('div');
+        urlDisplay.id = 'jvlauncher-url-display';
+        urlDisplay.style.cssText = `
+            flex: 1;
+            margin-left: 12px;
+            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 6px;
+            font-size: 12px;
+            color: #6e6e73;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+        `;
+
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {{
+            urlDisplay.style.background = 'rgba(255, 255, 255, 0.05)';
+            urlDisplay.style.color = '#98989d';
+        }}
+
+        // Update URL display
+        function updateURL() {{
+            urlDisplay.textContent = window.location.href;
+        }}
+        updateURL();
+
+        // Listen for URL changes (for SPAs and history navigation)
+        window.addEventListener('popstate', updateURL);
+
+        // Override pushState and replaceState to catch SPA navigation
+        const originalPushState = history.pushState;
+        const originalReplaceState = history.replaceState;
+
+        history.pushState = function() {{
+            originalPushState.apply(this, arguments);
+            updateURL();
+        }};
+
+        history.replaceState = function() {{
+            originalReplaceState.apply(this, arguments);
+            updateURL();
+        }};
+
+        navBar.appendChild(backBtn);
+        navBar.appendChild(forwardBtn);
+        navBar.appendChild(homeBtn);
+        navBar.appendChild(urlDisplay);
+
+        // Insert at the beginning of body
+        if (document.body) {{
+            document.body.insertBefore(navBar, document.body.firstChild);
+            // Add padding to body to prevent content overlap
+            const currentPadding = parseInt(window.getComputedStyle(document.body).paddingTop) || 0;
+            document.body.style.paddingTop = (currentPadding + 44) + 'px';
+        }}
+    }}
+}})();
+"#, original_url);
+
+        builder = builder.initialization_script(&nav_script);
+    }
+
     // Apply saved window state if available, otherwise use defaults
     if let Some(state) = saved_state {
         builder = builder

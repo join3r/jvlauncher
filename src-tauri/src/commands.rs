@@ -742,3 +742,57 @@ pub fn resize_terminal(
     Err("Terminal window not found".to_string())
 }
 
+/// Navigate back in webapp history
+#[tauri::command]
+pub fn webapp_navigate_back(app_handle: AppHandle, window_label: String) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
+        window.eval("window.history.back()")
+            .map_err(|e| format!("Failed to navigate back: {}", e))?;
+        Ok(())
+    } else {
+        Err(format!("Webapp window '{}' not found", window_label))
+    }
+}
+
+/// Navigate forward in webapp history
+#[tauri::command]
+pub fn webapp_navigate_forward(app_handle: AppHandle, window_label: String) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
+        window.eval("window.history.forward()")
+            .map_err(|e| format!("Failed to navigate forward: {}", e))?;
+        Ok(())
+    } else {
+        Err(format!("Webapp window '{}' not found", window_label))
+    }
+}
+
+/// Navigate to home URL in webapp
+#[tauri::command]
+pub fn webapp_navigate_home(
+    app_handle: AppHandle,
+    pool: State<DbPool>,
+    app_id: i64,
+) -> Result<(), String> {
+    // Get the app from database to retrieve its URL
+    let apps = database::get_all_apps(&pool)
+        .map_err(|e| format!("Failed to get apps: {}", e))?;
+
+    let app = apps.iter()
+        .find(|a| a.id == app_id)
+        .ok_or_else(|| format!("App with id {} not found", app_id))?;
+
+    let url = app.url.as_ref()
+        .ok_or_else(|| format!("No URL found for app {}", app_id))?;
+
+    let window_label = format!("webapp_{}", app_id);
+
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
+        let script = format!("window.location.href = '{}'", url);
+        window.eval(&script)
+            .map_err(|e| format!("Failed to navigate home: {}", e))?;
+        Ok(())
+    } else {
+        Err(format!("Webapp window '{}' not found", window_label))
+    }
+}
+
