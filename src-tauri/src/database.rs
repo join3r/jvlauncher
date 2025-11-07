@@ -15,6 +15,7 @@ pub enum AppType {
     App,
     Webapp,
     Tui,
+    Agent,
 }
 
 impl AppType {
@@ -23,6 +24,7 @@ impl AppType {
             AppType::App => "app",
             AppType::Webapp => "webapp",
             AppType::Tui => "tui",
+            AppType::Agent => "agent",
         }
     }
 
@@ -30,6 +32,7 @@ impl AppType {
         match s.to_lowercase().as_str() {
             "webapp" => AppType::Webapp,
             "tui" => AppType::Tui,
+            "agent" => AppType::Agent,
             _ => AppType::App,
         }
     }
@@ -92,6 +95,69 @@ pub struct Settings {
     pub start_at_login: bool,
     pub terminal_command: Option<String>,
     pub hide_app_names: bool,
+}
+
+/// AI settings
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AISettings {
+    pub enabled: bool,
+    pub endpoint_url: String,
+    pub api_key: String,
+    pub default_model: Option<String>,
+    pub max_concurrent_agents: i32,
+}
+
+impl Default for AISettings {
+    fn default() -> Self {
+        AISettings {
+            enabled: false,
+            endpoint_url: "http://192.168.1.113:1234".to_string(),
+            api_key: String::new(),
+            default_model: None,
+            max_concurrent_agents: 1,
+        }
+    }
+}
+
+/// AI Model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AIModel {
+    pub id: String,
+    pub created: Option<i64>,
+}
+
+/// Agent app configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentApp {
+    pub app_id: i64,
+    pub model: Option<String>,
+    pub prompt: String,
+    pub tool_notification: bool,
+    pub tool_website_scrape: bool,
+    pub tool_run_command: bool,
+    pub website_url: Option<String>,
+    pub command: Option<String>,
+}
+
+/// AI Queue item
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AIQueueItem {
+    pub id: i64,
+    pub status: String, // pending, processing, completed, failed
+    pub message: String,
+    pub response: Option<String>,
+    pub created_at: i64,
+    pub completed_at: Option<i64>,
+    pub agent_name: Option<String>,
+}
+
+/// Notification
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Notification {
+    pub id: i64,
+    pub text: String,
+    pub created_at: i64,
+    pub dismissed: bool,
 }
 
 impl Default for Settings {
@@ -184,6 +250,62 @@ fn create_schema(conn: &Connection) -> Result<()> {
         [],
     )?;
 
+    // AI models table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS ai_models (
+            id TEXT PRIMARY KEY,
+            created INTEGER
+        )",
+        [],
+    )?;
+
+    // Agent apps table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS agent_apps (
+            app_id INTEGER PRIMARY KEY,
+            model TEXT,
+            prompt TEXT NOT NULL,
+            tool_notification INTEGER DEFAULT 0,
+            tool_website_scrape INTEGER DEFAULT 0,
+            tool_run_command INTEGER DEFAULT 0,
+            website_url TEXT,
+            command TEXT,
+            FOREIGN KEY(app_id) REFERENCES apps(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    // AI queue table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS ai_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            status TEXT NOT NULL,
+            message TEXT NOT NULL,
+            response TEXT,
+            created_at INTEGER NOT NULL,
+            completed_at INTEGER,
+            agent_name TEXT
+        )",
+        [],
+    )?;
+
+    // Add agent_name column if it doesn't exist (migration)
+    let _ = conn.execute(
+        "ALTER TABLE ai_queue ADD COLUMN agent_name TEXT",
+        [],
+    );
+
+    // Notifications table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            text TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            dismissed INTEGER DEFAULT 0
+        )",
+        [],
+    )?;
+
     Ok(())
 }
 
@@ -219,6 +341,25 @@ fn initialize_settings(conn: &Connection) -> Result<()> {
     conn.execute(
         "INSERT OR IGNORE INTO settings (key, value) VALUES ('hide_app_names', ?1)",
         params![if default_settings.hide_app_names { "true" } else { "false" }],
+    )?;
+
+    // Initialize AI settings
+    let default_ai_settings = AISettings::default();
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('ai_enabled', ?1)",
+        params![if default_ai_settings.enabled { "true" } else { "false" }],
+    )?;
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('ai_endpoint_url', ?1)",
+        params![default_ai_settings.endpoint_url],
+    )?;
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('ai_api_key', ?1)",
+        params![default_ai_settings.api_key],
+    )?;
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('ai_max_concurrent_agents', ?1)",
+        params![default_ai_settings.max_concurrent_agents.to_string()],
     )?;
 
     Ok(())
@@ -303,6 +444,10 @@ pub fn create_app(pool: &DbPool, new_app: NewApp, session_dir: Option<PathBuf>) 
                 )?;
             }
         }
+        AppType::Agent => {
+            // Agent apps don't need app_details, they use agent_apps table
+            // Agent configuration will be saved separately via save_agent_app
+        }
         AppType::Webapp => {
             if let Some(url) = new_app.url {
                 let session_path = session_dir
@@ -352,6 +497,10 @@ pub fn update_app(pool: &DbPool, app: App) -> Result<()> {
                  WHERE app_id = ?3",
                 params![app.binary_path, app.cli_params, app.id],
             )?;
+        }
+        AppType::Agent => {
+            // Agent apps don't need app_details updates
+            // Agent configuration is updated separately via save_agent_app
         }
         AppType::Webapp => {
             let show_nav_controls = app.show_nav_controls.unwrap_or(false);
@@ -508,6 +657,312 @@ pub fn load_window_state(pool: &DbPool, app_id: i64) -> Result<Option<WindowStat
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
         Err(e) => Err(e.into()),
     }
+}
+
+/// Get AI settings
+pub fn get_ai_settings(pool: &DbPool) -> Result<AISettings> {
+    let conn = pool.get()?;
+    
+    let enabled: bool = conn.query_row(
+        "SELECT value FROM settings WHERE key = 'ai_enabled'",
+        [],
+        |row| row.get::<_, String>(0),
+    ).unwrap_or_else(|_| "false".to_string()) == "true";
+
+    let endpoint_url: String = conn.query_row(
+        "SELECT value FROM settings WHERE key = 'ai_endpoint_url'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or_else(|_| "http://192.168.1.113:1234".to_string());
+
+    let api_key: String = conn.query_row(
+        "SELECT value FROM settings WHERE key = 'ai_api_key'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or_else(|_| String::new());
+
+    let default_model: Option<String> = conn.query_row(
+        "SELECT value FROM settings WHERE key = 'ai_default_model'",
+        [],
+        |row| row.get(0),
+    ).ok();
+
+    let max_concurrent_agents: i32 = conn.query_row(
+        "SELECT value FROM settings WHERE key = 'ai_max_concurrent_agents'",
+        [],
+        |row| row.get::<_, String>(0),
+    ).unwrap_or_else(|_| "1".to_string())
+    .parse()
+    .unwrap_or(1);
+
+    Ok(AISettings {
+        enabled,
+        endpoint_url,
+        api_key,
+        default_model,
+        max_concurrent_agents,
+    })
+}
+
+/// Update AI setting
+pub fn update_ai_setting(pool: &DbPool, key: &str, value: &str) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+        params![format!("ai_{}", key), value],
+    )?;
+    Ok(())
+}
+
+/// Set default model
+pub fn set_default_model(pool: &DbPool, model_id: &str) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('ai_default_model', ?1)",
+        params![model_id],
+    )?;
+    Ok(())
+}
+
+/// Get all AI models
+pub fn get_models(pool: &DbPool) -> Result<Vec<AIModel>> {
+    let conn = pool.get()?;
+    let mut stmt = conn.prepare("SELECT id, created FROM ai_models ORDER BY id")?;
+    
+    let models = stmt.query_map([], |row| {
+        Ok(AIModel {
+            id: row.get(0)?,
+            created: row.get(1)?,
+        })
+    })?
+    .collect::<Result<Vec<_>, _>>()?;
+    
+    Ok(models)
+}
+
+/// Save AI models
+pub fn save_models(pool: &DbPool, models: Vec<AIModel>) -> Result<()> {
+    let conn = pool.get()?;
+    
+    // Clear existing models
+    conn.execute("DELETE FROM ai_models", [])?;
+    
+    // Insert new models
+    for model in models {
+        conn.execute(
+            "INSERT INTO ai_models (id, created) VALUES (?1, ?2)",
+            params![model.id, model.created],
+        )?;
+    }
+    
+    Ok(())
+}
+
+/// Get agent app configuration
+pub fn get_agent_app(pool: &DbPool, app_id: i64) -> Result<Option<AgentApp>> {
+    let conn = pool.get()?;
+    
+    let result = conn.query_row(
+        "SELECT app_id, model, prompt, tool_notification, tool_website_scrape, tool_run_command, website_url, command
+         FROM agent_apps WHERE app_id = ?1",
+        params![app_id],
+        |row| {
+            Ok(AgentApp {
+                app_id: row.get(0)?,
+                model: row.get(1)?,
+                prompt: row.get(2)?,
+                tool_notification: row.get::<_, i32>(3)? != 0,
+                tool_website_scrape: row.get::<_, i32>(4)? != 0,
+                tool_run_command: row.get::<_, i32>(5)? != 0,
+                website_url: row.get(6)?,
+                command: row.get(7)?,
+            })
+        },
+    );
+    
+    match result {
+        Ok(agent) => Ok(Some(agent)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(e.into()),
+    }
+}
+
+/// Save agent app configuration
+pub fn save_agent_app(pool: &DbPool, agent: &AgentApp) -> Result<()> {
+    let conn = pool.get()?;
+    
+    conn.execute(
+        "INSERT OR REPLACE INTO agent_apps (app_id, model, prompt, tool_notification, tool_website_scrape, tool_run_command, website_url, command)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        params![
+            agent.app_id,
+            agent.model,
+            agent.prompt,
+            if agent.tool_notification { 1 } else { 0 },
+            if agent.tool_website_scrape { 1 } else { 0 },
+            if agent.tool_run_command { 1 } else { 0 },
+            agent.website_url,
+            agent.command,
+        ],
+    )?;
+    
+    Ok(())
+}
+
+/// Add item to AI queue
+pub fn add_queue_item(pool: &DbPool, message: &str, agent_name: Option<&str>) -> Result<i64> {
+    let conn = pool.get()?;
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+
+    conn.execute(
+        "INSERT INTO ai_queue (status, message, created_at, agent_name) VALUES ('pending', ?1, ?2, ?3)",
+        params![message, timestamp, agent_name],
+    )?;
+
+    Ok(conn.last_insert_rowid())
+}
+
+/// Update queue item status
+pub fn update_queue_item_status(pool: &DbPool, id: i64, status: &str, response: Option<&str>) -> Result<()> {
+    let conn = pool.get()?;
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+    
+    if let Some(resp) = response {
+        conn.execute(
+            "UPDATE ai_queue SET status = ?1, response = ?2, completed_at = ?3 WHERE id = ?4",
+            params![status, resp, timestamp, id],
+        )?;
+    } else {
+        conn.execute(
+            "UPDATE ai_queue SET status = ?1 WHERE id = ?2",
+            params![status, id],
+        )?;
+    }
+    
+    Ok(())
+}
+
+/// Get AI queue items
+pub fn get_queue_items(pool: &DbPool) -> Result<Vec<AIQueueItem>> {
+    let conn = pool.get()?;
+    let mut stmt = conn.prepare(
+        "SELECT id, status, message, response, created_at, completed_at, agent_name FROM ai_queue ORDER BY created_at DESC LIMIT 100"
+    )?;
+
+    let items = stmt.query_map([], |row| {
+        Ok(AIQueueItem {
+            id: row.get(0)?,
+            status: row.get(1)?,
+            message: row.get(2)?,
+            response: row.get(3)?,
+            created_at: row.get(4)?,
+            completed_at: row.get(5)?,
+            agent_name: row.get(6)?,
+        })
+    })?
+    .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(items)
+}
+
+/// Get queue item by ID
+pub fn get_queue_item(pool: &DbPool, id: i64) -> Result<Option<AIQueueItem>> {
+    let conn = pool.get()?;
+
+    let result = conn.query_row(
+        "SELECT id, status, message, response, created_at, completed_at, agent_name FROM ai_queue WHERE id = ?1",
+        params![id],
+        |row| {
+            Ok(AIQueueItem {
+                id: row.get(0)?,
+                status: row.get(1)?,
+                message: row.get(2)?,
+                response: row.get(3)?,
+                created_at: row.get(4)?,
+                completed_at: row.get(5)?,
+                agent_name: row.get(6)?,
+            })
+        },
+    );
+
+    match result {
+        Ok(item) => Ok(Some(item)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(e.into()),
+    }
+}
+
+/// Clear finished queue items (completed and failed)
+pub fn clear_finished_queue_items(pool: &DbPool) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "DELETE FROM ai_queue WHERE status IN ('completed', 'failed')",
+        [],
+    )?;
+    Ok(())
+}
+
+/// Create notification
+pub fn create_notification(pool: &DbPool, text: &str) -> Result<i64> {
+    let conn = pool.get()?;
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+    
+    conn.execute(
+        "INSERT INTO notifications (text, created_at, dismissed) VALUES (?1, ?2, 0)",
+        params![text, timestamp],
+    )?;
+    
+    Ok(conn.last_insert_rowid())
+}
+
+/// Get notifications
+pub fn get_notifications(pool: &DbPool, include_dismissed: bool) -> Result<Vec<Notification>> {
+    let conn = pool.get()?;
+    let query = if include_dismissed {
+        "SELECT id, text, created_at, dismissed FROM notifications ORDER BY created_at DESC"
+    } else {
+        "SELECT id, text, created_at, dismissed FROM notifications WHERE dismissed = 0 ORDER BY created_at DESC"
+    };
+    
+    let mut stmt = conn.prepare(query)?;
+    
+    let notifications = stmt.query_map([], |row| {
+        Ok(Notification {
+            id: row.get(0)?,
+            text: row.get(1)?,
+            created_at: row.get(2)?,
+            dismissed: row.get::<_, i32>(3)? != 0,
+        })
+    })?
+    .collect::<Result<Vec<_>, _>>()?;
+    
+    Ok(notifications)
+}
+
+/// Dismiss notification
+pub fn dismiss_notification(pool: &DbPool, id: i64) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "UPDATE notifications SET dismissed = 1 WHERE id = ?1",
+        params![id],
+    )?;
+    Ok(())
+}
+
+/// Dismiss all notifications
+pub fn dismiss_all_notifications(pool: &DbPool) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute("UPDATE notifications SET dismissed = 1", [])?;
+    Ok(())
 }
 
 #[cfg(test)]

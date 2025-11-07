@@ -796,3 +796,257 @@ pub fn webapp_navigate_home(
     }
 }
 
+/// Get AI settings
+#[tauri::command]
+pub fn get_ai_settings(pool: State<DbPool>) -> Result<crate::database::AISettings, String> {
+    database::get_ai_settings(&pool)
+        .map_err(|e| format!("Failed to get AI settings: {}", e))
+}
+
+/// Update AI setting
+#[tauri::command]
+pub fn update_ai_setting(pool: State<DbPool>, key: String, value: String) -> Result<(), String> {
+    database::update_ai_setting(&pool, &key, &value)
+        .map_err(|e| format!("Failed to update AI setting: {}", e))?;
+    
+    // Update queue manager max concurrent if needed
+    if key == "max_concurrent_agents" {
+        if let Ok(max) = value.parse::<i32>() {
+            if let Ok(queue_manager) = crate::ai::queue::get_queue_manager() {
+                queue_manager.set_max_concurrent(max);
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+/// Fetch models from endpoint
+#[tauri::command]
+pub fn fetch_models(pool: State<DbPool>) -> Result<Vec<crate::database::AIModel>, String> {
+    crate::ai::llm_client::fetch_models(&pool)
+        .map_err(|e| format!("Failed to fetch models: {}", e))
+}
+
+/// Fetch models from a specific endpoint (allows fetching even if AI not enabled)
+#[tauri::command]
+pub fn fetch_models_with_endpoint(
+    pool: State<DbPool>,
+    endpoint_url: String,
+    api_key: Option<String>,
+) -> Result<Vec<crate::database::AIModel>, String> {
+    // Use provided API key, or get from settings if not provided
+    let api_key = api_key.unwrap_or_else(|| {
+        crate::database::get_ai_settings(&pool)
+            .map(|s| s.api_key)
+            .unwrap_or_default()
+    });
+    
+    crate::ai::llm_client::fetch_models_from_endpoint(&pool, &endpoint_url, &api_key)
+        .map_err(|e| format!("Failed to fetch models: {}", e))
+}
+
+/// Get cached models
+#[tauri::command]
+pub fn get_models(pool: State<DbPool>) -> Result<Vec<crate::database::AIModel>, String> {
+    database::get_models(&pool)
+        .map_err(|e| format!("Failed to get models: {}", e))
+}
+
+/// Set default model
+#[tauri::command]
+pub fn set_default_model(pool: State<DbPool>, model_id: String) -> Result<(), String> {
+    database::set_default_model(&pool, &model_id)
+        .map_err(|e| format!("Failed to set default model: {}", e))
+}
+
+/// Get AI queue items
+#[tauri::command]
+pub fn get_ai_queue(pool: State<DbPool>) -> Result<Vec<crate::database::AIQueueItem>, String> {
+    database::get_queue_items(&pool)
+        .map_err(|e| format!("Failed to get queue items: {}", e))
+}
+
+/// Get queue item by ID
+#[tauri::command]
+pub fn get_queue_item(pool: State<DbPool>, id: i64) -> Result<Option<crate::database::AIQueueItem>, String> {
+    database::get_queue_item(&pool, id)
+        .map_err(|e| format!("Failed to get queue item: {}", e))
+}
+
+/// Clear finished queue items
+#[tauri::command]
+pub fn clear_finished_queue_items(pool: State<DbPool>) -> Result<(), String> {
+    database::clear_finished_queue_items(&pool)
+        .map_err(|e| format!("Failed to clear finished queue items: {}", e))
+}
+
+/// Create notification
+#[tauri::command]
+pub fn create_notification(pool: State<DbPool>, text: String) -> Result<i64, String> {
+    database::create_notification(&pool, &text)
+        .map_err(|e| format!("Failed to create notification: {}", e))
+}
+
+/// Get notifications
+#[tauri::command]
+pub fn get_notifications(pool: State<DbPool>, include_dismissed: bool) -> Result<Vec<crate::database::Notification>, String> {
+    database::get_notifications(&pool, include_dismissed)
+        .map_err(|e| format!("Failed to get notifications: {}", e))
+}
+
+/// Dismiss notification
+#[tauri::command]
+pub fn dismiss_notification(pool: State<DbPool>, id: i64) -> Result<(), String> {
+    database::dismiss_notification(&pool, id)
+        .map_err(|e| format!("Failed to dismiss notification: {}", e))
+}
+
+/// Dismiss all notifications
+#[tauri::command]
+pub fn dismiss_all_notifications(pool: State<DbPool>) -> Result<(), String> {
+    database::dismiss_all_notifications(&pool)
+        .map_err(|e| format!("Failed to dismiss all notifications: {}", e))
+}
+
+/// Open AI queue window
+#[tauri::command]
+pub fn open_ai_queue_window(app_handle: AppHandle) -> Result<(), String> {
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+
+    let window_label = "ai-queue";
+
+    // Disable always-on-top for main window to allow modal to appear on top
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.set_always_on_top(false);
+    }
+
+    // Check if window already exists
+    if let Some(window) = app_handle.get_webview_window(window_label) {
+        window.show().map_err(|e| format!("Failed to show window: {}", e))?;
+        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        return Ok(());
+    }
+
+    // Create new window
+    let window = WebviewWindowBuilder::new(
+        &app_handle,
+        window_label,
+        WebviewUrl::App("ai-queue.html".into())
+    )
+    .title("AI Queue")
+    .inner_size(800.0, 600.0)
+    .resizable(true)
+    .center()
+    .always_on_top(true)
+    .skip_taskbar(false)
+    .build()
+    .map_err(|e| format!("Failed to create AI queue window: {}", e))?;
+
+    // Set up close handler to restore main window always-on-top
+    let app_handle_clone = app_handle.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { .. } = event {
+            if let Some(main_window) = app_handle_clone.get_webview_window("main") {
+                let _ = main_window.set_always_on_top(true);
+            }
+        }
+    });
+
+    Ok(())
+}
+
+/// Open queue item detail window
+#[tauri::command]
+pub fn open_queue_detail_window(app_handle: AppHandle, queue_id: i64) -> Result<(), String> {
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+
+    let window_label = format!("queue-detail-{}", queue_id);
+
+    // Check if window already exists
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
+        window.show().map_err(|e| format!("Failed to show window: {}", e))?;
+        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        return Ok(());
+    }
+
+    // Create new window with queue ID as query parameter
+    let url = format!("queue-detail.html?id={}", queue_id);
+    let _window = WebviewWindowBuilder::new(
+        &app_handle,
+        &window_label,
+        WebviewUrl::App(url.into())
+    )
+    .title(format!("Queue Item #{}", queue_id))
+    .inner_size(700.0, 600.0)
+    .resizable(true)
+    .center()
+    .always_on_top(false)
+    .skip_taskbar(false)
+    .build()
+    .map_err(|e| format!("Failed to create queue detail window: {}", e))?;
+
+    Ok(())
+}
+
+/// Save agent app configuration
+#[tauri::command]
+pub fn save_agent_app(pool: State<DbPool>, agent_app: crate::database::AgentApp) -> Result<(), String> {
+    database::save_agent_app(&pool, &agent_app)
+        .map_err(|e| format!("Failed to save agent app: {}", e))
+}
+
+/// Get agent app configuration
+#[tauri::command]
+pub fn get_agent_app(pool: State<DbPool>, app_id: i64) -> Result<Option<crate::database::AgentApp>, String> {
+    database::get_agent_app(&pool, app_id)
+        .map_err(|e| format!("Failed to get agent app: {}", e))
+}
+
+/// Open notifications window
+#[tauri::command]
+pub fn open_notifications_window(app_handle: AppHandle) -> Result<(), String> {
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+
+    let window_label = "notifications";
+
+    // Disable always-on-top for main window to allow modal to appear on top
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.set_always_on_top(false);
+    }
+
+    // Check if window already exists
+    if let Some(window) = app_handle.get_webview_window(window_label) {
+        window.show().map_err(|e| format!("Failed to show window: {}", e))?;
+        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        return Ok(());
+    }
+
+    // Create new window
+    let window = WebviewWindowBuilder::new(
+        &app_handle,
+        window_label,
+        WebviewUrl::App("notifications.html".into())
+    )
+    .title("Notifications")
+    .inner_size(500.0, 600.0)
+    .resizable(true)
+    .center()
+    .always_on_top(true)
+    .skip_taskbar(false)
+    .build()
+    .map_err(|e| format!("Failed to create notifications window: {}", e))?;
+
+    // Set up close handler to restore main window always-on-top
+    let app_handle_clone = app_handle.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { .. } = event {
+            if let Some(main_window) = app_handle_clone.get_webview_window("main") {
+                let _ = main_window.set_always_on_top(true);
+            }
+        }
+    });
+
+    Ok(())
+}
+

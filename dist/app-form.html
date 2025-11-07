@@ -188,6 +188,7 @@
                     <button data-value="app">Application</button>
                     <button data-value="webapp">Web Application</button>
                     <button data-value="tui">Terminal Application</button>
+                    <button data-value="agent">Agent</button>
                 </div>
             </div>
 
@@ -247,6 +248,41 @@
             <div class="form-label" id="params-label">CLI Parameters</div>
             <div class="form-control" id="params-group">
                 <input type="text" id="app-params" placeholder="--flag value">
+            </div>
+
+            <!-- Agent-specific fields -->
+            <div class="form-label" id="agent-model-label" style="display: none;">Model</div>
+            <div class="form-control" id="agent-model-group" style="display: none;">
+                <select id="agent-model" style="flex: 1;">
+                    <option value="">Use default from settings</option>
+                </select>
+            </div>
+
+            <div class="form-label" id="agent-prompt-label" style="display: none;">Prompt</div>
+            <div class="form-control" id="agent-prompt-group" style="display: none; flex-direction: column; align-items: flex-start;">
+                <textarea id="agent-prompt" placeholder="Enter the system prompt for the agent..." style="width: 100%; min-height: 100px; padding: 6px; border: 0.5px solid var(--border-color); border-radius: 5px; font-size: 13px; background: var(--bg-tertiary); color: var(--text-primary); font-family: inherit; resize: vertical;"></textarea>
+            </div>
+
+            <div class="form-label" id="agent-tools-label" style="display: none;">Tools</div>
+            <div class="form-control" id="agent-tools-group" style="display: none; flex-direction: column; align-items: flex-start; gap: 8px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="agent-tool-notification" style="width: auto; height: auto; margin: 0;">
+                    <span style="font-size: 13px;">Notification - Send notifications to the user</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="agent-tool-website-scrape" style="width: auto; height: auto; margin: 0;">
+                    <span style="font-size: 13px;">Website Scrape - Scrape websites for context</span>
+                </label>
+                <div style="margin-left: 22px; width: 100%;">
+                    <input type="text" id="agent-website-url" placeholder="URL to scrape (optional)" style="width: 100%; margin-top: 4px;" disabled>
+                </div>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="agent-tool-run-command" style="width: auto; height: auto; margin: 0;">
+                    <span style="font-size: 13px;">Run Command - Execute system commands</span>
+                </label>
+                <div style="margin-left: 22px; width: 100%;">
+                    <input type="text" id="agent-command" placeholder="Command to run (optional)" style="width: 100%; margin-top: 4px;" disabled>
+                </div>
             </div>
 
             <div class="form-label">Icon</div>

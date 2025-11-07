@@ -289,6 +289,36 @@ function getThemeFromSegment() {
     return active ? active.dataset.value : 'system';
 }
 
+// Tab switching
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+    
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `${tabName}-tab`);
+    });
+    
+    // Auto-resize window when switching tabs
+    setTimeout(() => {
+        autoResizeWindow();
+    }, 50);
+}
+
+// Update AI settings disabled state
+function updateAISettingsDisabled() {
+    const enabled = document.getElementById('ai-enabled').checked;
+    const aiSettingsRows = document.getElementById('ai-settings-rows');
+    
+    if (enabled) {
+        aiSettingsRows.classList.remove('ai-settings-disabled');
+    } else {
+        aiSettingsRows.classList.add('ai-settings-disabled');
+    }
+}
+
 // Load settings
 async function loadSettings() {
     console.log('[Settings] Loading settings...');
@@ -309,10 +339,104 @@ async function loadSettings() {
         document.getElementById('settings-start-login').checked = settings.start_at_login || false;
         document.getElementById('settings-hide-app-names').checked = settings.hide_app_names || false;
 
+        // Load AI settings
+        try {
+            const aiSettings = await invoke('get_ai_settings');
+            document.getElementById('ai-enabled').checked = aiSettings.enabled || false;
+            document.getElementById('ai-endpoint-url').value = aiSettings.endpoint_url || 'http://192.168.1.113:1234';
+            document.getElementById('ai-api-key').value = aiSettings.api_key || '';
+            document.getElementById('ai-max-concurrent').value = aiSettings.max_concurrent_agents || 1;
+            
+            // Load models
+            await loadModels();
+            
+            // Set default model
+            if (aiSettings.default_model) {
+                document.getElementById('ai-default-model').value = aiSettings.default_model;
+            }
+            
+            updateAISettingsDisabled();
+        } catch (error) {
+            console.error('[Settings] Failed to load AI settings:', error);
+            // Set defaults if AI settings don't exist yet
+            document.getElementById('ai-enabled').checked = false;
+            document.getElementById('ai-endpoint-url').value = 'http://192.168.1.113:1234';
+            document.getElementById('ai-max-concurrent').value = 1;
+            updateAISettingsDisabled();
+        }
+
         // Apply the theme to this window
         applyTheme(settings.theme || 'system');
     } catch (error) {
         console.error('[Settings] Failed to load settings:', error);
+    }
+}
+
+// Load models list
+async function loadModels() {
+    try {
+        const models = await invoke('get_models');
+        const defaultModel = document.getElementById('ai-default-model');
+
+        // Clear existing options
+        defaultModel.innerHTML = '<option value="">Select default model</option>';
+
+        if (models && models.length > 0) {
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.id;
+                defaultModel.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('[Settings] Failed to load models:', error);
+    }
+}
+
+// Update models from endpoint
+async function updateModels() {
+    const btn = document.getElementById('update-models-btn');
+    const originalText = btn.textContent;
+    
+    // Check if AI is enabled in UI (even if not saved yet)
+    const aiEnabled = document.getElementById('ai-enabled').checked;
+    if (!aiEnabled) {
+        alert('Please enable AI features first');
+        return;
+    }
+    
+    // Get endpoint URL and API key from UI
+    const endpointUrl = document.getElementById('ai-endpoint-url').value.trim();
+    if (!endpointUrl) {
+        alert('Please enter an endpoint URL first');
+        return;
+    }
+    
+    const apiKey = document.getElementById('ai-api-key').value.trim();
+    
+    try {
+        btn.disabled = true;
+        btn.textContent = 'Updating...';
+        
+        // Use a special fetch_models command that accepts endpoint URL and API key directly
+        // This allows fetching models even if AI is not saved as enabled yet
+        await invoke('fetch_models_with_endpoint', {
+            endpointUrl: endpointUrl,
+            apiKey: apiKey
+        });
+        await loadModels();
+        
+        btn.textContent = 'Updated!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    } catch (error) {
+        console.error('[Settings] Failed to update models:', error);
+        alert('Failed to update models: ' + error);
+        btn.textContent = originalText;
+    } finally {
+        btn.disabled = false;
     }
 }
 
@@ -443,6 +567,22 @@ async function saveSettings() {
         hide_app_names: document.getElementById('settings-hide-app-names').checked
     };
 
+    // Save AI settings
+    try {
+        await invoke('update_ai_setting', { key: 'enabled', value: document.getElementById('ai-enabled').checked ? 'true' : 'false' });
+        await invoke('update_ai_setting', { key: 'endpoint_url', value: document.getElementById('ai-endpoint-url').value });
+        await invoke('update_ai_setting', { key: 'api_key', value: document.getElementById('ai-api-key').value });
+        await invoke('update_ai_setting', { key: 'max_concurrent_agents', value: document.getElementById('ai-max-concurrent').value });
+        
+        const defaultModel = document.getElementById('ai-default-model').value;
+        if (defaultModel) {
+            await invoke('set_default_model', { modelId: defaultModel });
+        }
+    } catch (error) {
+        console.error('[Settings] Failed to save AI settings:', error);
+        // Don't block save if AI settings fail
+    }
+
     // Check for keyboard shortcut conflicts with app shortcuts
     if (newSettings.global_shortcut) {
         try {
@@ -509,6 +649,29 @@ async function init() {
 
         // Load settings and apply theme
         await loadSettings();
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                switchTab(tab.dataset.tab);
+            });
+        });
+
+        // AI enabled checkbox
+        document.getElementById('ai-enabled').addEventListener('change', updateAISettingsDisabled);
+
+        // Update models button
+        document.getElementById('update-models-btn').addEventListener('click', updateModels);
+
+        // View AI queue button
+        document.getElementById('view-ai-queue-btn').addEventListener('click', async () => {
+            try {
+                await invoke('open_ai_queue_window');
+            } catch (error) {
+                console.error('[Settings] Failed to open AI queue window:', error);
+                alert('Failed to open AI queue window: ' + error);
+            }
+        });
 
         // Theme segmented control
         const themeSegment = document.getElementById('theme-segment');

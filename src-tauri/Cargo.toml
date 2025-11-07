@@ -40,11 +40,14 @@ image = "0.24"
 # Terminal emulator
 portable-pty = "0.8"
 
-# HTTP client for fetching web icons
-reqwest = { version = "0.11", features = ["blocking"] }
+# HTTP client for fetching web icons and AI API calls
+reqwest = { version = "0.11", features = ["blocking", "json"] }
 
-# HTML parsing for extracting icon URLs
+# HTML parsing for extracting icon URLs and website scraping
 scraper = "0.17"
+
+# Text extraction from HTML
+html2text = "0.3"
 
 # URL parsing
 url = "2.5"

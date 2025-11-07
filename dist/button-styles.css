@@ -1,0 +1,231 @@
+/* ============================================
+   Shared Button Component Styles
+   Based on settings window buttons
+   ============================================ */
+
+/* Base button styles */
+button,
+.btn {
+    padding: 4px 14px;
+    border: 0.5px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    height: 24px;
+    line-height: 1.2;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+button:hover,
+.btn:hover {
+    background: var(--bg-tertiary);
+}
+
+button:active,
+.btn:active {
+    transform: scale(0.98);
+}
+
+/* Primary button */
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.btn-primary:hover {
+    filter: brightness(0.95);
+    background: var(--accent);
+}
+
+/* Secondary button */
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-tertiary);
+}
+
+/* Danger button */
+.btn-danger {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.btn-danger:hover {
+    filter: brightness(0.95);
+}
+
+/* Success button */
+.btn-success {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.btn-success:hover {
+    filter: brightness(0.95);
+}
+
+/* Record button (for shortcut recording) */
+.btn-record {
+    padding: 3px 12px;
+    border: 0.5px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    white-space: nowrap;
+    height: 22px;
+    line-height: 1.2;
+}
+
+.btn-record:hover {
+    background: var(--bg-tertiary);
+}
+
+.btn-record.recording {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Disabled state */
+button:disabled,
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+button:disabled:hover,
+.btn:disabled:hover {
+    background: var(--bg-secondary);
+    transform: none;
+}
+
+/* macOS-specific button styles */
+.platform-macos .btn-primary {
+    background: var(--accent, #007aff);
+    color: white;
+    border: 0.5px solid var(--accent, #007aff);
+    font-weight: 400;
+    box-shadow: 0 1px 2px rgba(0, 122, 255, 0.2);
+}
+
+.platform-macos .btn-primary:hover {
+    background: #0051d5;
+    border-color: #0051d5;
+    box-shadow: 0 1px 3px rgba(0, 122, 255, 0.3);
+    filter: none;
+}
+
+.platform-macos .btn-success {
+    background: var(--accent, #007aff);
+    color: white;
+    border: 0.5px solid var(--accent, #007aff);
+    font-weight: 400;
+    box-shadow: 0 1px 2px rgba(0, 122, 255, 0.2);
+}
+
+.platform-macos .btn-success:hover {
+    background: #0051d5;
+    border-color: #0051d5;
+    box-shadow: 0 1px 3px rgba(0, 122, 255, 0.3);
+    filter: none;
+}
+
+.platform-macos .btn-secondary {
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.75));
+    color: var(--text-primary, #1d1d1f);
+    border: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.1));
+}
+
+.platform-macos .btn-secondary:hover {
+    background: var(--bg-tertiary, rgba(255, 255, 255, 0.85));
+    border-color: var(--border-color, rgba(0, 0, 0, 0.15));
+}
+
+.platform-macos .btn-danger {
+    background: #ff3b30;
+    color: white;
+    border: 0.5px solid #ff3b30;
+    font-weight: 400;
+}
+
+.platform-macos .btn-danger:hover {
+    background: #d32f2f;
+    border-color: #d32f2f;
+    filter: none;
+}
+
+/* Material Design button styles (Windows/Linux) */
+.platform-other .btn-primary {
+    background: var(--accent);
+    color: white;
+}
+
+.platform-other .btn-primary:hover {
+    background: #1677ff;
+    filter: none;
+}
+
+.platform-other .btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.platform-other .btn-success:hover {
+    background: #218838;
+    filter: none;
+}
+
+.platform-other .btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.platform-other .btn-secondary:hover {
+    background: #5a6268;
+}
+
+.platform-other .btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.platform-other .btn-danger:hover {
+    background: #c82333;
+    filter: none;
+}
+
+.platform-other .btn-record {
+    background: #6c757d;
+    color: white;
+    border: none;
+}
+
+.platform-other .btn-record:hover {
+    background: #5a6268;
+}
+
+.platform-other .btn-record.recording {
+    background: #dc3545;
+}
+

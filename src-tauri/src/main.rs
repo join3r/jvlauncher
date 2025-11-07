@@ -10,6 +10,8 @@ mod shortcut_manager;
 mod terminal;
 mod updater;
 mod webapp_auto_close;
+mod ai;
+mod scraper;
 
 #[cfg(target_os = "macos")]
 mod macos_delegate;
@@ -60,6 +62,11 @@ fn main() {
 
             // Store database pool in app state
             app.manage(pool.clone());
+            
+            // Initialize AI queue manager
+            let ai_settings = database::get_ai_settings(&pool)
+                .unwrap_or_default();
+            ai::queue::init_queue_manager(pool.clone(), ai_settings.max_concurrent_agents);
 
             // Initialize terminal state
             app.manage(terminal::TerminalState {
@@ -252,6 +259,24 @@ fn main() {
             commands::webapp_navigate_back,
             commands::webapp_navigate_forward,
             commands::webapp_navigate_home,
+            commands::get_ai_settings,
+            commands::update_ai_setting,
+            commands::fetch_models,
+            commands::fetch_models_with_endpoint,
+            commands::get_models,
+            commands::set_default_model,
+            commands::get_ai_queue,
+            commands::get_queue_item,
+            commands::clear_finished_queue_items,
+            commands::create_notification,
+            commands::get_notifications,
+            commands::dismiss_notification,
+            commands::dismiss_all_notifications,
+            commands::open_ai_queue_window,
+            commands::open_queue_detail_window,
+            commands::open_notifications_window,
+            commands::save_agent_app,
+            commands::get_agent_app,
             updater::check_for_updates,
             updater::download_and_install_update,
         ])

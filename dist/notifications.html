@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        html { background: transparent !important; }
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: #f2f2f7 !important;
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        :root[data-theme="dark"] body { background: #2c2c2e !important; }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme]) body { background: #2c2c2e !important; }
+        }
+        .notifications-container {
+            padding: 16px 20px;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .notifications-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        h2 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .notifications-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .notification-item {
+            padding: 12px;
+            border: 0.5px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .notification-item:hover {
+            background: var(--bg-tertiary);
+        }
+        .notification-item.expanded {
+            background: var(--bg-tertiary);
+        }
+        .notification-preview {
+            font-size: 12px;
+            color: var(--text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .notification-full {
+            display: none;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .notification-item.expanded .notification-full {
+            display: block;
+        }
+        .notification-time {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        .btn {
+            padding: 4px 14px;
+            border: 0.5px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.15s;
+            height: 24px;
+            line-height: 1.2;
+        }
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        .btn-secondary:hover {
+            background: var(--bg-tertiary);
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .actions-bar {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="notifications-container">
+        <div class="notifications-header">
+            <h2>Notifications</h2>
+        </div>
+        <div class="notifications-list" id="notifications-list">
+            <div class="empty-state">Loading...</div>
+        </div>
+        <div class="actions-bar">
+            <button class="btn btn-danger" id="dismiss-all-btn">Dismiss All</button>
+        </div>
+    </div>
+
+    <script src="notifications.js"></script>
+</body>
+</html>
+

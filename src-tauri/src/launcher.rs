@@ -10,6 +10,7 @@ pub fn launch_app(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()
         AppType::App => launch_application(app)?,
         AppType::Webapp => launch_webapp(app, app_handle, pool)?,
         AppType::Tui => launch_tui(app, app_handle)?,
+        AppType::Agent => launch_agent(app, app_handle, pool)?,
     }
     Ok(())
 }
@@ -608,6 +609,29 @@ fn launch_tui(app: &App, app_handle: &AppHandle) -> Result<()> {
 
     // Launch in terminal window
     create_terminal_window(app_handle, app.id, &window_label, &app.name, binary_path, &args)?;
+
+    Ok(())
+}
+
+/// Launch an agent application
+fn launch_agent(app: &App, _app_handle: &AppHandle, pool: &DbPool) -> Result<()> {
+    // Get agent configuration
+    let agent_config = crate::database::get_agent_app(pool, app.id)?
+        .ok_or_else(|| anyhow!("No agent configuration found for app {}", app.id))?;
+
+    // Execute agent in background (spawn a thread)
+    let pool_clone = pool.clone();
+    let agent_name = app.name.clone();
+    std::thread::spawn(move || {
+        match crate::ai::agent::execute_agent(&pool_clone, &agent_config, Some(&agent_name)) {
+            Ok(result) => {
+                eprintln!("Agent execution completed: {}", result);
+            }
+            Err(e) => {
+                eprintln!("Agent execution failed: {}", e);
+            }
+        }
+    });
 
     Ok(())
 }
