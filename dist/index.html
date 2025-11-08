@@ -8,6 +8,12 @@
 </head>
 <body style="background: transparent;">
     <div class="app-container">
+        <!-- Tabs (hidden by default, shown when separate_agent_apps is enabled) -->
+        <div class="launcher-tabs" id="launcher-tabs" style="display: none;">
+            <button class="launcher-tab active" data-tab="all">All Apps</button>
+            <button class="launcher-tab" data-tab="agents">Agent Apps</button>
+        </div>
+
         <!-- App grid -->
         <div class="grid-container">
             <div class="app-grid" id="app-grid" tabindex="0"></div>

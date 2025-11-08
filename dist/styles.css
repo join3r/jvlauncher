@@ -253,6 +253,47 @@ body {
     background: #545b62;
 }
 
+/* Launcher tabs */
+.launcher-tabs {
+    display: flex;
+    gap: 0;
+    padding: 12px 20px 0 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.launcher-tab {
+    appearance: none;
+    border: none;
+    background: transparent;
+    padding: 8px 16px;
+    border-bottom: 2px solid transparent;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.launcher-tab:hover {
+    color: var(--text-primary);
+}
+
+.launcher-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+}
+
+/* macOS Native Tabs */
+.platform-macos .launcher-tabs {
+    padding: 16px 28px 0 28px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.platform-macos .launcher-tab {
+    padding: 8px 16px;
+}
+
 .grid-container {
     display: flex;
     align-items: flex-start;
@@ -262,9 +303,18 @@ body {
     box-sizing: border-box;
 }
 
+/* When tabs are visible, reduce top padding */
+.launcher-tabs:not([style*="display: none"]) ~ .grid-container {
+    padding-top: 12px;
+}
+
 /* macOS Native Grid Container - More Generous Padding */
 .platform-macos .grid-container {
     padding: 28px;
+}
+
+.platform-macos .launcher-tabs:not([style*="display: none"]) ~ .grid-container {
+    padding-top: 16px;
 }
 
 .app-grid {

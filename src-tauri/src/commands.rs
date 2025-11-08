@@ -476,7 +476,7 @@ pub fn quit_app(app_handle: AppHandle) -> Result<(), String> {
 
 /// Resize the main window based on grid dimensions
 #[tauri::command]
-pub fn resize_main_window(app_handle: AppHandle, grid_cols: i32, grid_rows: i32) -> Result<(), String> {
+pub fn resize_main_window(app_handle: AppHandle, grid_cols: i32, grid_rows: i32, tabs_visible: Option<bool>) -> Result<(), String> {
     use tauri::Manager;
 
     // Calculate window dimensions based on grid
@@ -492,10 +492,16 @@ pub fn resize_main_window(app_handle: AppHandle, grid_cols: i32, grid_rows: i32)
     const PADDING_TOP: f64 = 24.0; // 24px top padding
     const PADDING_BOTTOM: f64 = 24.0; // 24px bottom padding
     const FLOATING_BUTTONS_HEIGHT: f64 = 72.0; // Space for floating buttons (48px button + 24px margin)
+    const TABS_HEIGHT: f64 = 45.0; // Height of tab bar when visible (padding + tab height + border)
 
     // Calculate dimensions
     let width = (ITEM_WIDTH * grid_cols as f64) + (GRID_GAP * (grid_cols - 1) as f64) + PADDING_HORIZONTAL;
-    let height = (ITEM_HEIGHT * grid_rows as f64) + (GRID_GAP * (grid_rows - 1) as f64) + PADDING_TOP + PADDING_BOTTOM + FLOATING_BUTTONS_HEIGHT;
+    let mut height = (ITEM_HEIGHT * grid_rows as f64) + (GRID_GAP * (grid_rows - 1) as f64) + PADDING_TOP + PADDING_BOTTOM + FLOATING_BUTTONS_HEIGHT;
+
+    // Add tab bar height if tabs are visible
+    if tabs_visible.unwrap_or(false) {
+        height += TABS_HEIGHT;
+    }
 
     // Apply min/max constraints
     let width = width.max(400.0).min(2000.0);

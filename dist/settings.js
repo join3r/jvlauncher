@@ -338,6 +338,7 @@ async function loadSettings() {
 
         document.getElementById('settings-start-login').checked = settings.start_at_login || false;
         document.getElementById('settings-hide-app-names').checked = settings.hide_app_names || false;
+        document.getElementById('settings-separate-agent-apps').checked = settings.separate_agent_apps || false;
 
         // Load AI settings
         try {
@@ -564,7 +565,8 @@ async function saveSettings() {
         grid_rows: parseInt(document.getElementById('settings-grid-rows').value),
         global_shortcut: shortcutInput.dataset.rawValue || shortcutInput.value,
         start_at_login: document.getElementById('settings-start-login').checked,
-        hide_app_names: document.getElementById('settings-hide-app-names').checked
+        hide_app_names: document.getElementById('settings-hide-app-names').checked,
+        separate_agent_apps: document.getElementById('settings-separate-agent-apps').checked
     };
 
     // Save AI settings
@@ -609,6 +611,7 @@ async function saveSettings() {
         await invoke('update_setting', { key: 'global_shortcut', value: newSettings.global_shortcut });
         await invoke('update_setting', { key: 'start_at_login', value: newSettings.start_at_login ? 'true' : 'false' });
         await invoke('update_setting', { key: 'hide_app_names', value: newSettings.hide_app_names ? 'true' : 'false' });
+        await invoke('update_setting', { key: 'separate_agent_apps', value: newSettings.separate_agent_apps ? 'true' : 'false' });
 
         // Update the global shortcut registration in the backend
         await invoke('update_global_shortcut', { shortcut: newSettings.global_shortcut });

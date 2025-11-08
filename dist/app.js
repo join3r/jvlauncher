@@ -90,13 +90,26 @@ async function detectPlatform() {
 
 // State
 let apps = [];
-let settings = { grid_cols: 4, grid_rows: 3, theme: 'system', global_shortcut: 'CommandOrControl+Shift+Space', start_at_login: false, hide_app_names: false };
+let settings = { grid_cols: 4, grid_rows: 3, theme: 'system', global_shortcut: 'CommandOrControl+Shift+Space', start_at_login: false, hide_app_names: false, separate_agent_apps: false };
 let selectedIndex = null; // Start with no selection - highlight only appears after arrow/enter key press
 let isDragging = false; // Track if a drag operation is in progress
 let draggedIndex = null; // Track which item is being dragged
 let draggedElement = null; // Track the dragged DOM element
 let dragOverElement = null; // Track the element currently being dragged over
 let dragGhost = null; // Visual drag ghost element
+let activeTab = 'all'; // Current active tab: 'all' or 'agents'
+
+// Get filtered apps based on current tab
+function getFilteredApps() {
+    if (settings.separate_agent_apps) {
+        if (activeTab === 'agents') {
+            return apps.filter(app => app.app_type === 'agent');
+        } else {
+            return apps.filter(app => app.app_type !== 'agent');
+        }
+    }
+    return apps;
+}
 
 // Shortcut recording state
 let isRecording = false;
@@ -336,6 +349,14 @@ async function loadSettings() {
         } else {
             document.documentElement.classList.remove('hide-app-names');
         }
+        // Show/hide tabs based on separate_agent_apps setting
+        const tabsElement = document.getElementById('launcher-tabs');
+        if (settings.separate_agent_apps) {
+            tabsElement.style.display = 'flex';
+        } else {
+            tabsElement.style.display = 'none';
+            activeTab = 'all'; // Reset to all apps when tabs are hidden
+        }
         // Resize window to match grid dimensions
         await resizeWindow();
     } catch (error) {
@@ -348,7 +369,8 @@ async function resizeWindow() {
     try {
         await invoke('resize_main_window', {
             gridCols: settings.grid_cols,
-            gridRows: settings.grid_rows
+            gridRows: settings.grid_rows,
+            tabsVisible: settings.separate_agent_apps || false
         });
     } catch (error) {
         console.error('Failed to resize window:', error);
@@ -369,8 +391,11 @@ async function loadApps() {
 function renderApps() {
     const grid = document.getElementById('app-grid');
     grid.innerHTML = '';
-    
-    apps.forEach((app, index) => {
+
+    // Get filtered apps based on active tab
+    const filteredApps = getFilteredApps();
+
+    filteredApps.forEach((app, index) => {
         const item = document.createElement('div');
         item.className = 'icon-item';
         item.dataset.index = index;
@@ -630,7 +655,29 @@ function setupEventListeners() {
     } else {
         console.error('Settings button not found!');
     }
-    
+
+    // Tab click handlers
+    const tabButtons = document.querySelectorAll('.launcher-tab');
+    tabButtons.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            const tabName = tab.dataset.tab;
+            console.log('Tab clicked:', tabName);
+
+            // Update active tab
+            activeTab = tabName;
+
+            // Update tab UI
+            tabButtons.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Reset selection when switching tabs
+            selectedIndex = null;
+
+            // Re-render apps with new filter
+            renderApps();
+        });
+    });
+
     // Keyboard navigation on grid
     const appGrid = document.getElementById('app-grid');
     if (appGrid) {
@@ -740,10 +787,11 @@ function setupEventListeners() {
 
 // Handle keyboard navigation
 function handleKeyDown(e) {
-    if (apps.length === 0) return;
+    const filteredApps = getFilteredApps();
+    if (filteredApps.length === 0) return;
 
     const gridCols = settings.grid_cols;  // Use columns for horizontal navigation
-    const totalApps = apps.length;
+    const totalApps = filteredApps.length;
 
     switch (e.key) {
         case 'ArrowRight':
@@ -794,8 +842,8 @@ function handleKeyDown(e) {
                 renderApps();
             }
             // Launch the selected app
-            if (apps[selectedIndex]) {
-                launchApp(apps[selectedIndex].id);
+            if (filteredApps[selectedIndex]) {
+                launchApp(filteredApps[selectedIndex].id);
             }
             break;
         case 'Escape':

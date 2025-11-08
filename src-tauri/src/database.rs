@@ -95,6 +95,7 @@ pub struct Settings {
     pub start_at_login: bool,
     pub terminal_command: Option<String>,
     pub hide_app_names: bool,
+    pub separate_agent_apps: bool,
 }
 
 /// AI settings
@@ -172,6 +173,7 @@ impl Default for Settings {
             start_at_login: false,
             terminal_command: None,
             hide_app_names: false,
+            separate_agent_apps: false,
         }
     }
 }
@@ -350,6 +352,11 @@ fn initialize_settings(conn: &Connection) -> Result<()> {
     conn.execute(
         "INSERT OR IGNORE INTO settings (key, value) VALUES ('hide_app_names', ?1)",
         params![if default_settings.hide_app_names { "true" } else { "false" }],
+    )?;
+
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('separate_agent_apps', ?1)",
+        params![if default_settings.separate_agent_apps { "true" } else { "false" }],
     )?;
 
     // Initialize AI settings
@@ -604,6 +611,12 @@ pub fn get_settings(pool: &DbPool) -> Result<Settings> {
         |row| row.get::<_, String>(0),
     ).unwrap_or_else(|_| "false".to_string()) == "true";
 
+    let separate_agent_apps: bool = conn.query_row(
+        "SELECT value FROM settings WHERE key = 'separate_agent_apps'",
+        [],
+        |row| row.get::<_, String>(0),
+    ).unwrap_or_else(|_| "false".to_string()) == "true";
+
     Ok(Settings {
         global_shortcut,
         theme,
@@ -612,6 +625,7 @@ pub fn get_settings(pool: &DbPool) -> Result<Settings> {
         start_at_login,
         terminal_command,
         hide_app_names,
+        separate_agent_apps,
     })
 }
 
