@@ -49,6 +49,32 @@ function toAssetUrl(filePath) {
     return convertFileSrc(filePath);
 }
 
+// Scrape mode helpers
+function getScrapeMode() {
+    const textBtn = document.getElementById('scrape-mode-text');
+    const visualBtn = document.getElementById('scrape-mode-visual');
+
+    if (textBtn.classList.contains('is-active')) {
+        return 'text';
+    } else if (visualBtn.classList.contains('is-active')) {
+        return 'visual';
+    }
+    return 'text'; // default
+}
+
+function setScrapeMode(mode) {
+    const textBtn = document.getElementById('scrape-mode-text');
+    const visualBtn = document.getElementById('scrape-mode-visual');
+
+    if (mode === 'visual') {
+        textBtn.classList.remove('is-active');
+        visualBtn.classList.add('is-active');
+    } else {
+        textBtn.classList.add('is-active');
+        visualBtn.classList.remove('is-active');
+    }
+}
+
 // Auto-resize window to fit content
 async function autoResizeWindow() {
     console.log('[AppForm] autoResizeWindow called');
@@ -482,6 +508,8 @@ function updateFieldsVisibility() {
         document.getElementById('agent-input-command-group').style.display = 'none';
         document.getElementById('agent-input-website-label').style.display = 'none';
         document.getElementById('agent-input-website-group').style.display = 'none';
+        document.getElementById('agent-scrape-mode-label').style.display = 'none';
+        document.getElementById('agent-scrape-mode-group').style.display = 'none';
 
         // Hide Output section
         document.getElementById('agent-output-label').style.display = 'none';
@@ -520,6 +548,8 @@ function updateFieldsVisibility() {
         document.getElementById('agent-input-command-group').style.display = 'flex';
         document.getElementById('agent-input-website-label').style.display = 'block';
         document.getElementById('agent-input-website-group').style.display = 'flex';
+        document.getElementById('agent-scrape-mode-label').style.display = 'block';
+        document.getElementById('agent-scrape-mode-group').style.display = 'flex';
 
         // Show Output section
         document.getElementById('agent-output-label').style.display = 'block';
@@ -558,6 +588,8 @@ function updateFieldsVisibility() {
         document.getElementById('agent-input-command-group').style.display = 'none';
         document.getElementById('agent-input-website-label').style.display = 'none';
         document.getElementById('agent-input-website-group').style.display = 'none';
+        document.getElementById('agent-scrape-mode-label').style.display = 'none';
+        document.getElementById('agent-scrape-mode-group').style.display = 'none';
 
         // Hide Output section
         document.getElementById('agent-output-label').style.display = 'none';
@@ -647,6 +679,11 @@ async function loadAppData() {
                             document.getElementById('agent-input-website-url').value = agentConfig.websiteUrl || '';
                             document.getElementById('agent-output-notification').checked = agentConfig.toolNotification || false;
                             document.getElementById('agent-output-run-command').checked = agentConfig.toolRunCommand || false;
+
+                            // Set scrape mode
+                            const scrapeMode = agentConfig.websiteScrapeMode || 'text';
+                            setScrapeMode(scrapeMode);
+
                             console.log('[AppForm] Model dropdown value after setting:', document.getElementById('agent-model').value);
                         }
                     } catch (error) {
@@ -893,6 +930,7 @@ async function saveApp() {
 
                 // Website scrape is enabled if URL is provided
                 const toolWebsiteScrape = inputWebsiteUrl !== null && inputWebsiteUrl !== '';
+                const scrapeModeValue = getScrapeMode();
 
                 const agentAppData = {
                     appId: appData.id,
@@ -902,6 +940,7 @@ async function saveApp() {
                     toolWebsiteScrape: toolWebsiteScrape,
                     toolRunCommand: toolRunCommand,
                     websiteUrl: inputWebsiteUrl,
+                    websiteScrapeMode: scrapeModeValue,
                     command: inputCommand
                 };
                 console.log('[AppForm] Saving agent config:', agentAppData);
@@ -958,6 +997,7 @@ async function saveApp() {
 
                 // Website scrape is enabled if URL is provided
                 const toolWebsiteScrape = inputWebsiteUrl !== null && inputWebsiteUrl !== '';
+                const scrapeModeValue = getScrapeMode();
 
                 await invoke('save_agent_app', {
                     agentApp: {
@@ -968,6 +1008,7 @@ async function saveApp() {
                         toolWebsiteScrape: toolWebsiteScrape,
                         toolRunCommand: toolRunCommand,
                         websiteUrl: inputWebsiteUrl,
+                        websiteScrapeMode: scrapeModeValue,
                         command: inputCommand
                     }
                 });
@@ -1222,6 +1263,15 @@ async function init() {
             } catch (error) {
                 console.error('Failed to open file dialog:', error);
             }
+        });
+
+        // Scrape mode buttons
+        document.getElementById('scrape-mode-text').addEventListener('click', () => {
+            setScrapeMode('text');
+        });
+
+        document.getElementById('scrape-mode-visual').addEventListener('click', () => {
+            setScrapeMode('visual');
         });
 
         // Save button

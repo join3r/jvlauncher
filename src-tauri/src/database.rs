@@ -137,6 +137,7 @@ pub struct AgentApp {
     pub tool_website_scrape: bool,
     pub tool_run_command: bool,
     pub website_url: Option<String>,
+    pub website_scrape_mode: Option<String>, // "text" or "visual"
     pub command: Option<String>,
 }
 
@@ -270,11 +271,18 @@ fn create_schema(conn: &Connection) -> Result<()> {
             tool_website_scrape INTEGER DEFAULT 0,
             tool_run_command INTEGER DEFAULT 0,
             website_url TEXT,
+            website_scrape_mode TEXT DEFAULT 'text',
             command TEXT,
             FOREIGN KEY(app_id) REFERENCES apps(id) ON DELETE CASCADE
         )",
         [],
     )?;
+
+    // Add website_scrape_mode column if it doesn't exist (migration)
+    let _ = conn.execute(
+        "ALTER TABLE agent_apps ADD COLUMN website_scrape_mode TEXT DEFAULT 'text'",
+        [],
+    );
 
     // AI queue table
     conn.execute(
@@ -764,7 +772,7 @@ pub fn get_agent_app(pool: &DbPool, app_id: i64) -> Result<Option<AgentApp>> {
     let conn = pool.get()?;
     
     let result = conn.query_row(
-        "SELECT app_id, model, prompt, tool_notification, tool_website_scrape, tool_run_command, website_url, command
+        "SELECT app_id, model, prompt, tool_notification, tool_website_scrape, tool_run_command, website_url, website_scrape_mode, command
          FROM agent_apps WHERE app_id = ?1",
         params![app_id],
         |row| {
@@ -776,7 +784,8 @@ pub fn get_agent_app(pool: &DbPool, app_id: i64) -> Result<Option<AgentApp>> {
                 tool_website_scrape: row.get::<_, i32>(4)? != 0,
                 tool_run_command: row.get::<_, i32>(5)? != 0,
                 website_url: row.get(6)?,
-                command: row.get(7)?,
+                website_scrape_mode: row.get(7)?,
+                command: row.get(8)?,
             })
         },
     );
@@ -793,8 +802,8 @@ pub fn save_agent_app(pool: &DbPool, agent: &AgentApp) -> Result<()> {
     let conn = pool.get()?;
     
     conn.execute(
-        "INSERT OR REPLACE INTO agent_apps (app_id, model, prompt, tool_notification, tool_website_scrape, tool_run_command, website_url, command)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        "INSERT OR REPLACE INTO agent_apps (app_id, model, prompt, tool_notification, tool_website_scrape, tool_run_command, website_url, website_scrape_mode, command)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         params![
             agent.app_id,
             agent.model,
@@ -803,6 +812,7 @@ pub fn save_agent_app(pool: &DbPool, agent: &AgentApp) -> Result<()> {
             if agent.tool_website_scrape { 1 } else { 0 },
             if agent.tool_run_command { 1 } else { 0 },
             agent.website_url,
+            agent.website_scrape_mode,
             agent.command,
         ],
     )?;

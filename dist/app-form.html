@@ -236,6 +236,14 @@
                 <input type="text" id="agent-input-website-url" placeholder="URL to scrape">
             </div>
 
+            <div class="form-label" id="agent-scrape-mode-label" style="display: none;">Scrape Mode</div>
+            <div class="form-control" id="agent-scrape-mode-group" style="display: none;">
+                <div class="segmented">
+                    <button type="button" id="scrape-mode-text" class="is-active">Text</button>
+                    <button type="button" id="scrape-mode-visual" disabled title="Visual mode (screenshots) coming soon">Visual</button>
+                </div>
+            </div>
+
             <!-- Agent Output Section -->
             <div class="form-label" id="agent-output-label" style="display: none; font-weight: 500; margin-top: 16px;">Output</div>
             <div class="form-control" id="agent-output-separator" style="display: none; grid-column: 1 / -1; height: 0.5px; background: var(--border-color); margin: 4px 0;"></div>

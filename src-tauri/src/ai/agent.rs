@@ -28,28 +28,17 @@ pub fn execute_agent(pool: &DbPool, agent: &AgentApp, agent_name: Option<&str>, 
     
     if agent.tool_notification {
         tool_definitions.push(llm_client::ToolDefinition::notification());
-        tool_descriptions.push("• send_notification(message: string) - Send a notification to the user with your findings or results");
-    }
-
-    if agent.tool_website_scrape {
-        tool_definitions.push(llm_client::ToolDefinition::website_scrape());
-        tool_descriptions.push("• scrape_website(url: string) - Scrape a website and get its text content for analysis");
-
-        // Add website URL to context if provided
-        if let Some(url) = &agent.website_url {
-            system_prompt.push_str(&format!("\n\nPre-configured website URL: {}", url));
-        }
+        tool_descriptions.push("• send_notification(message: string) - Send a notification ONLY when user's conditions are met or critical info needs reporting");
     }
 
     if agent.tool_run_command {
         tool_definitions.push(llm_client::ToolDefinition::run_command());
-        tool_descriptions.push("• run_command(command: string) - Execute the pre-configured system command and get its output");
-
-        // Add command to context if provided
-        if let Some(cmd) = &agent.command {
-            system_prompt.push_str(&format!("\n\nPre-configured command: {}", cmd));
-        }
+        tool_descriptions.push("• run_command(command: string) - Execute a system command and get its output");
     }
+
+    // Note: Website scraping and input command execution are NOT tools - they are pre-executed and provided as input
+    // The tool_website_scrape flag and command field are used to determine if we should execute and include output,
+    // but the LLM doesn't get to choose whether to scrape/run the input command or not
 
     if !tool_descriptions.is_empty() {
         system_prompt.push_str("\n\n=== AVAILABLE TOOLS ===\n");
@@ -61,35 +50,26 @@ pub fn execute_agent(pool: &DbPool, agent: &AgentApp, agent_name: Option<&str>, 
         system_prompt.push_str("\n=== TOOL USAGE INSTRUCTIONS ===\n");
 
         if agent.tool_notification {
-            system_prompt.push_str("NOTIFICATION: You MUST use send_notification to report your findings to the user. This is how you communicate results.\n");
-            system_prompt.push_str("Examples:\n");
-            system_prompt.push_str("  - send_notification({\"message\": \"Website check complete: Found 3 new articles about AI\"})\n");
-            system_prompt.push_str("  - send_notification({\"message\": \"Error: Unable to access the website - connection timeout\"})\n");
-            system_prompt.push_str("  - send_notification({\"message\": \"Command executed successfully. Exit code: 0\"})\n");
-            system_prompt.push_str("  - send_notification({\"message\": \"No changes detected since last check\"})\n\n");
+            system_prompt.push_str("NOTIFICATION: Use send_notification ONLY when the user's specified conditions are met or when there's critical information to report.\n");
+            system_prompt.push_str("DO NOT send notifications for negative results (e.g., 'product not available', 'no changes found') unless the user explicitly asks for them.\n");
+            system_prompt.push_str("Examples of when to send notifications:\n");
+            system_prompt.push_str("  - User says 'notify if product is available' AND product IS available → send_notification({\"message\": \"Product is now in stock!\"})\n");
+            system_prompt.push_str("  - User says 'notify if product is available' AND product is NOT available → DO NOT send notification\n");
+            system_prompt.push_str("  - User says 'check website and notify me' → send_notification with findings (always notify)\n");
+            system_prompt.push_str("  - Error occurs → send_notification({\"message\": \"Error: Unable to access the website\"})\n\n");
         }
 
         if agent.tool_run_command {
-            if let Some(cmd) = &agent.command {
-                system_prompt.push_str(&format!("RUN COMMAND: Execute '{}' to gather information, then analyze the output and send a notification with your findings.\n", cmd));
-                system_prompt.push_str("Workflow:\n");
-                system_prompt.push_str(&format!("  1. Call run_command({{\"command\": \"{}\"}})\n", cmd));
-                system_prompt.push_str("  2. Analyze the stdout, stderr, and exit code\n");
-                system_prompt.push_str("  3. Call send_notification with a summary of the results\n\n");
-            }
+            system_prompt.push_str("RUN COMMAND: Use run_command to execute system commands when you need to perform actions or gather additional information.\n");
+            system_prompt.push_str("You can run any valid system command. The command will be executed and you will receive its stdout, stderr, and exit code.\n");
+            system_prompt.push_str("Examples of when to use run_command:\n");
+            system_prompt.push_str("  - User says 'create a file' → run_command({\"command\": \"touch /path/to/file\"})\n");
+            system_prompt.push_str("  - User says 'check disk space' → run_command({\"command\": \"df -h\"})\n");
+            system_prompt.push_str("  - User says 'list files' → run_command({\"command\": \"ls -la\"})\n");
+            system_prompt.push_str("  - Need to gather system information → run_command with appropriate command\n\n");
         }
 
-        if agent.tool_website_scrape {
-            if let Some(url) = &agent.website_url {
-                system_prompt.push_str(&format!("WEBSITE SCRAPE: Scrape '{}' to get current content, analyze it, then send a notification with your findings.\n", url));
-                system_prompt.push_str("Workflow:\n");
-                system_prompt.push_str(&format!("  1. Call scrape_website({{\"url\": \"{}\"}})\n", url));
-                system_prompt.push_str("  2. Analyze the content for relevant information\n");
-                system_prompt.push_str("  3. Call send_notification with a summary of what you found\n\n");
-            }
-        }
-
-        system_prompt.push_str("IMPORTANT: Always end your workflow by calling send_notification to inform the user of your results!\n");
+        system_prompt.push_str("IMPORTANT: Only use tools when necessary to fulfill the user's request or when there's critical information to report!\n");
     }
     
     // Build messages
@@ -115,7 +95,51 @@ pub fn execute_agent(pool: &DbPool, agent: &AgentApp, agent_name: Option<&str>, 
             }
         }
     }
-    
+
+    // Add user message if input command is provided (execute as input, not as a tool)
+    if let Some(cmd) = &agent.command {
+        // Execute the command
+        use std::process::Command;
+
+        // Parse command (simple split for now, can be improved)
+        let parts: Vec<&str> = cmd.split_whitespace().collect();
+        if !parts.is_empty() {
+            let program = parts[0];
+            let args = &parts[1..];
+
+            match Command::new(program).args(args).output() {
+                Ok(output) => {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+
+                    let mut result = format!("Input command execution result for '{}':\n\n", cmd);
+                    if !stdout.is_empty() {
+                        result.push_str(&format!("STDOUT:\n{}\n", stdout));
+                    }
+                    if !stderr.is_empty() {
+                        result.push_str(&format!("STDERR:\n{}\n", stderr));
+                    }
+                    if let Some(code) = output.status.code() {
+                        result.push_str(&format!("Exit code: {}\n", code));
+                    }
+
+                    messages.push(llm_client::ChatMessage {
+                        role: "user".to_string(),
+                        content: result,
+                    });
+                }
+                Err(e) => {
+                    // Continue even if command execution fails
+                    eprintln!("Failed to execute input command '{}': {}", cmd, e);
+                    messages.push(llm_client::ChatMessage {
+                        role: "user".to_string(),
+                        content: format!("Error executing input command '{}': {}", cmd, e),
+                    });
+                }
+            }
+        }
+    }
+
     // Enqueue request
     let queue_manager = queue::get_queue_manager()?;
     let message_text = serde_json::to_string(&messages).unwrap_or_default();

@@ -202,7 +202,7 @@ impl ToolDefinition {
     pub fn notification() -> Self {
         Self {
             name: "send_notification".to_string(),
-            description: "Send a notification to the user to inform them about results, findings, errors, or important information. ALWAYS use this tool to communicate your findings or results to the user. Examples: 'Website check complete: Found 3 new articles', 'Error: Unable to access the website', 'Task completed successfully', 'No changes detected since last check'.".to_string(),
+            description: "Send a notification to the user to inform them about important events, findings, or errors. ONLY use this tool when the user's specified conditions are met or when there's critical information to report. Do NOT send notifications for negative results unless explicitly requested. Examples: 'Product is now in stock', 'Error: Unable to access the website', 'New article found matching your criteria'.".to_string(),
             parameters: json!({
                 "type": "object",
                 "properties": {
@@ -215,36 +215,18 @@ impl ToolDefinition {
             }),
         }
     }
-    
-    /// Website scrape tool
-    pub fn website_scrape() -> Self {
-        Self {
-            name: "scrape_website".to_string(),
-            description: "Scrape a website and extract its text content. The content will be provided to you as context. Use this when you need information from a specific URL.".to_string(),
-            parameters: json!({
-                "type": "object",
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "description": "The URL of the website to scrape"
-                    }
-                },
-                "required": ["url"]
-            }),
-        }
-    }
-    
-    /// Run command tool
+
+    /// Run command tool (output action)
     pub fn run_command() -> Self {
         Self {
             name: "run_command".to_string(),
-            description: "Execute a system command and get its output. IMPORTANT: You can ONLY run the exact command that was pre-configured - you cannot modify, alter, or add arguments to it. The command will be executed and you will receive its stdout, stderr, and exit code. Use this to gather information from system commands, then use send_notification to report the results to the user.".to_string(),
+            description: "Execute a system command and get its output. Use this when you need to perform actions or gather additional information by running commands. The command will be executed and you will receive its stdout, stderr, and exit code. You can run any valid system command.".to_string(),
             parameters: json!({
                 "type": "object",
                 "properties": {
                     "command": {
                         "type": "string",
-                        "description": "The exact pre-configured command to run (must match exactly, cannot be modified)"
+                        "description": "The system command to execute (e.g., 'ls -la', 'df -h', 'touch /path/to/file')"
                     }
                 },
                 "required": ["command"]
