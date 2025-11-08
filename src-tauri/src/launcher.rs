@@ -93,8 +93,9 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
     .title(&app.name)
     .resizable(true)
     .data_directory(std::path::PathBuf::from(session_path))
-    // Set a standard browser user agent to avoid being blocked by sites like Cloudflare Access
-    .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+    // Use Safari user agent to match macOS Safari behavior
+    // This is more natural than Chrome UA since we're using WKWebView (Safari's engine)
+    .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15");
 
     // Add navigation bar initialization script if enabled (runs on every page load)
     if app.show_nav_controls.unwrap_or(false) {
@@ -614,7 +615,7 @@ fn launch_tui(app: &App, app_handle: &AppHandle) -> Result<()> {
 }
 
 /// Launch an agent application
-fn launch_agent(app: &App, _app_handle: &AppHandle, pool: &DbPool) -> Result<()> {
+fn launch_agent(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()> {
     // Get agent configuration
     let agent_config = crate::database::get_agent_app(pool, app.id)?
         .ok_or_else(|| anyhow!("No agent configuration found for app {}", app.id))?;
@@ -622,8 +623,9 @@ fn launch_agent(app: &App, _app_handle: &AppHandle, pool: &DbPool) -> Result<()>
     // Execute agent in background (spawn a thread)
     let pool_clone = pool.clone();
     let agent_name = app.name.clone();
+    let app_handle_clone = app_handle.clone();
     std::thread::spawn(move || {
-        match crate::ai::agent::execute_agent(&pool_clone, &agent_config, Some(&agent_name)) {
+        match crate::ai::agent::execute_agent(&pool_clone, &agent_config, Some(&agent_name), &app_handle_clone) {
             Ok(result) => {
                 eprintln!("Agent execution completed: {}", result);
             }

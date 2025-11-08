@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Application</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="button-styles.css">
     <style>
         html { background: transparent !important; }
         body {
@@ -101,56 +102,13 @@
             border-color: var(--accent);
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
         }
+        /* Button styles are now in button-styles.css */
         .input-with-button {
             display: flex;
             gap: 6px;
         }
         .input-with-button input {
             flex: 1;
-        }
-        .btn {
-            padding: 4px 14px;
-            border: 0.5px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 400;
-            cursor: pointer;
-            transition: all 0.15s;
-            white-space: nowrap;
-            height: 24px;
-            line-height: 1.2;
-        }
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-        .btn-primary:hover {
-            filter: brightness(0.95);
-        }
-        .btn-success {
-            background: #28a745;
-            color: white;
-            border-color: #28a745;
-        }
-        .btn-success:hover {
-            background: #218838;
-        }
-        .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 0.5px solid var(--border-color); }
-        .btn-secondary:hover { background: var(--bg-tertiary); }
-        .btn-record { padding: 3px 12px; border: 0.5px solid var(--border-color) !important; border-radius: 5px; font-size: 13px; background: var(--bg-secondary) !important; color: var(--text-primary) !important; cursor: pointer; white-space: nowrap; font-weight: 400; height: 22px; line-height: 1.2; }
-        .btn-record:hover { background: var(--bg-tertiary) !important; }
-        .btn-record.recording {
-            background: #dc3545;
-            color: white;
-            border-color: #dc3545;
-            animation: pulse 1s infinite;
-        }
-        .btn-clear { padding: 3px 12px; border: 0.5px solid var(--border-color) !important; border-radius: 5px; font-size: 13px; background: var(--bg-secondary) !important; color: var(--text-primary) !important; cursor: pointer; white-space: nowrap; font-weight: 400; height: 22px; line-height: 1.2; }
-        .btn-clear:hover { background: #dc3545 !important; color: white !important; border-color: #dc3545 !important; }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
         }
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
         #icon-preview {
@@ -185,9 +143,9 @@
             <div class="form-label">Type</div>
             <div class="form-control">
                 <div class="segmented" id="type-segment">
-                    <button data-value="app">Application</button>
-                    <button data-value="webapp">Web Application</button>
-                    <button data-value="tui">Terminal Application</button>
+                    <button data-value="app">App</button>
+                    <button data-value="webapp">Web App</button>
+                    <button data-value="tui">Terminal App</button>
                     <button data-value="agent">Agent</button>
                 </div>
             </div>
@@ -242,7 +200,7 @@
             <div class="form-label" id="binary-label">Binary Path</div>
             <div class="form-control" id="binary-group">
                 <input type="text" id="app-binary" placeholder="/path/to/binary" style="flex: 1;">
-                <button class="btn btn-primary" id="browse-binary-btn">Browse</button>
+                <button class="btn btn-secondary" id="browse-binary-btn">Browse</button>
             </div>
 
             <div class="form-label" id="params-label">CLI Parameters</div>
@@ -258,38 +216,55 @@
                 </select>
             </div>
 
+            <!-- Agent Input Section -->
+            <div class="form-label" id="agent-input-label" style="display: none; font-weight: 500; margin-top: 8px;">Input</div>
+            <div class="form-control" id="agent-input-separator" style="display: none; grid-column: 1 / -1; height: 0.5px; background: var(--border-color); margin: 4px 0;"></div>
+
             <div class="form-label" id="agent-prompt-label" style="display: none;">Prompt</div>
             <div class="form-control" id="agent-prompt-group" style="display: none; flex-direction: column; align-items: flex-start;">
                 <textarea id="agent-prompt" placeholder="Enter the system prompt for the agent..." style="width: 100%; min-height: 100px; padding: 6px; border: 0.5px solid var(--border-color); border-radius: 5px; font-size: 13px; background: var(--bg-tertiary); color: var(--text-primary); font-family: inherit; resize: vertical;"></textarea>
             </div>
 
-            <div class="form-label" id="agent-tools-label" style="display: none;">Tools</div>
-            <div class="form-control" id="agent-tools-group" style="display: none; flex-direction: column; align-items: flex-start; gap: 8px;">
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                    <input type="checkbox" id="agent-tool-notification" style="width: auto; height: auto; margin: 0;">
-                    <span style="font-size: 13px;">Notification - Send notifications to the user</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                    <input type="checkbox" id="agent-tool-website-scrape" style="width: auto; height: auto; margin: 0;">
-                    <span style="font-size: 13px;">Website Scrape - Scrape websites for context</span>
-                </label>
-                <div style="margin-left: 22px; width: 100%;">
-                    <input type="text" id="agent-website-url" placeholder="URL to scrape (optional)" style="width: 100%; margin-top: 4px;" disabled>
-                </div>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                    <input type="checkbox" id="agent-tool-run-command" style="width: auto; height: auto; margin: 0;">
-                    <span style="font-size: 13px;">Run Command - Execute system commands</span>
-                </label>
-                <div style="margin-left: 22px; width: 100%;">
-                    <input type="text" id="agent-command" placeholder="Command to run (optional)" style="width: 100%; margin-top: 4px;" disabled>
-                </div>
+            <div class="form-label" id="agent-input-command-label" style="display: none;">Run Command</div>
+            <div class="form-control" id="agent-input-command-group" style="display: none;">
+                <input type="text" id="agent-input-command" placeholder="Command to run" style="flex: 1;">
+                <button class="btn btn-secondary" id="browse-command-btn">Browse</button>
             </div>
+
+            <div class="form-label" id="agent-input-website-label" style="display: none;">Website Scrape</div>
+            <div class="form-control" id="agent-input-website-group" style="display: none;">
+                <input type="text" id="agent-input-website-url" placeholder="URL to scrape">
+            </div>
+
+            <!-- Agent Output Section -->
+            <div class="form-label" id="agent-output-label" style="display: none; font-weight: 500; margin-top: 16px;">Output</div>
+            <div class="form-control" id="agent-output-separator" style="display: none; grid-column: 1 / -1; height: 0.5px; background: var(--border-color); margin: 4px 0;"></div>
+
+            <div class="form-label" id="agent-output-notification-label" style="display: none;">Notification</div>
+            <div class="form-control" id="agent-output-notification-group" style="display: none; flex-direction: column; align-items: flex-start;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="agent-output-notification" style="width: auto; height: auto; margin: 0;">
+                    <span style="font-size: 13px;">Enable notification output</span>
+                </label>
+            </div>
+
+            <div class="form-label" id="agent-output-command-label" style="display: none;">Run Command</div>
+            <div class="form-control" id="agent-output-command-group" style="display: none; flex-direction: column; align-items: flex-start;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="agent-output-run-command" style="width: auto; height: auto; margin: 0;">
+                    <span style="font-size: 13px;">Enable command execution output</span>
+                </label>
+            </div>
+
+            <!-- Common fields separator (for agent type) -->
+            <div class="form-label" id="agent-common-label" style="display: none; font-weight: 500; margin-top: 16px; grid-column: 1 / -1;"></div>
+            <div class="form-control" id="agent-common-separator" style="display: none; grid-column: 1 / -1; height: 0.5px; background: var(--border-color); margin: 4px 0;"></div>
 
             <div class="form-label">Icon</div>
             <div class="form-control" style="flex-direction: column; align-items: flex-start; gap: 6px;">
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn btn-primary" id="browse-icon-btn">Choose Icon</button>
-                    <button class="btn btn-primary" id="paste-icon-btn">Paste Icon</button>
+                    <button class="btn btn-secondary" id="browse-icon-btn">Choose Icon</button>
+                    <button class="btn btn-secondary" id="paste-icon-btn">Paste Icon</button>
                 </div>
                 <div class="icon-tip">Tip: Copy PNG icons from <a id="dashboardicons-link">dashboardicons.com</a></div>
                 <div id="icon-preview"></div>

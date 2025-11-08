@@ -454,8 +454,6 @@ function updateFieldsVisibility() {
     const agentModelGroup = document.getElementById('agent-model-group');
     const agentPromptLabel = document.getElementById('agent-prompt-label');
     const agentPromptGroup = document.getElementById('agent-prompt-group');
-    const agentToolsLabel = document.getElementById('agent-tools-label');
-    const agentToolsGroup = document.getElementById('agent-tools-group');
 
     if (type === 'webapp') {
         urlLabel.style.display = 'block';
@@ -476,8 +474,25 @@ function updateFieldsVisibility() {
         agentModelGroup.style.display = 'none';
         agentPromptLabel.style.display = 'none';
         agentPromptGroup.style.display = 'none';
-        agentToolsLabel.style.display = 'none';
-        agentToolsGroup.style.display = 'none';
+
+        // Hide Input section
+        document.getElementById('agent-input-label').style.display = 'none';
+        document.getElementById('agent-input-separator').style.display = 'none';
+        document.getElementById('agent-input-command-label').style.display = 'none';
+        document.getElementById('agent-input-command-group').style.display = 'none';
+        document.getElementById('agent-input-website-label').style.display = 'none';
+        document.getElementById('agent-input-website-group').style.display = 'none';
+
+        // Hide Output section
+        document.getElementById('agent-output-label').style.display = 'none';
+        document.getElementById('agent-output-separator').style.display = 'none';
+        document.getElementById('agent-output-notification-label').style.display = 'none';
+        document.getElementById('agent-output-notification-group').style.display = 'none';
+        document.getElementById('agent-output-command-label').style.display = 'none';
+        document.getElementById('agent-output-command-group').style.display = 'none';
+
+        // Hide common fields separator
+        document.getElementById('agent-common-separator').style.display = 'none';
     } else if (type === 'agent') {
         urlLabel.style.display = 'none';
         urlGroup.style.display = 'none';
@@ -495,11 +510,27 @@ function updateFieldsVisibility() {
         paramsGroup.style.display = 'none';
         agentModelLabel.style.display = 'block';
         agentModelGroup.style.display = 'flex';
+
+        // Show Input section
+        document.getElementById('agent-input-label').style.display = 'block';
+        document.getElementById('agent-input-separator').style.display = 'block';
         agentPromptLabel.style.display = 'block';
         agentPromptGroup.style.display = 'flex';
-        agentToolsLabel.style.display = 'block';
-        agentToolsGroup.style.display = 'flex';
-        updateAgentToolFields();
+        document.getElementById('agent-input-command-label').style.display = 'block';
+        document.getElementById('agent-input-command-group').style.display = 'flex';
+        document.getElementById('agent-input-website-label').style.display = 'block';
+        document.getElementById('agent-input-website-group').style.display = 'flex';
+
+        // Show Output section
+        document.getElementById('agent-output-label').style.display = 'block';
+        document.getElementById('agent-output-separator').style.display = 'block';
+        document.getElementById('agent-output-notification-label').style.display = 'block';
+        document.getElementById('agent-output-notification-group').style.display = 'flex';
+        document.getElementById('agent-output-command-label').style.display = 'block';
+        document.getElementById('agent-output-command-group').style.display = 'flex';
+
+        // Show common fields separator
+        document.getElementById('agent-common-separator').style.display = 'block';
     } else {
         urlLabel.style.display = 'none';
         urlGroup.style.display = 'none';
@@ -519,8 +550,25 @@ function updateFieldsVisibility() {
         agentModelGroup.style.display = 'none';
         agentPromptLabel.style.display = 'none';
         agentPromptGroup.style.display = 'none';
-        agentToolsLabel.style.display = 'none';
-        agentToolsGroup.style.display = 'none';
+
+        // Hide Input section
+        document.getElementById('agent-input-label').style.display = 'none';
+        document.getElementById('agent-input-separator').style.display = 'none';
+        document.getElementById('agent-input-command-label').style.display = 'none';
+        document.getElementById('agent-input-command-group').style.display = 'none';
+        document.getElementById('agent-input-website-label').style.display = 'none';
+        document.getElementById('agent-input-website-group').style.display = 'none';
+
+        // Hide Output section
+        document.getElementById('agent-output-label').style.display = 'none';
+        document.getElementById('agent-output-separator').style.display = 'none';
+        document.getElementById('agent-output-notification-label').style.display = 'none';
+        document.getElementById('agent-output-notification-group').style.display = 'none';
+        document.getElementById('agent-output-command-label').style.display = 'none';
+        document.getElementById('agent-output-command-group').style.display = 'none';
+
+        // Hide common fields separator
+        document.getElementById('agent-common-separator').style.display = 'none';
     }
 
     // Update auto-close timeout visibility
@@ -535,29 +583,7 @@ function updateFieldsVisibility() {
     });
 }
 
-// Update agent tool fields visibility based on checkboxes
-function updateAgentToolFields() {
-    const websiteScrapeEnabled = document.getElementById('agent-tool-website-scrape').checked;
-    const runCommandEnabled = document.getElementById('agent-tool-run-command').checked;
-    const websiteUrlInput = document.getElementById('agent-website-url');
-    const commandInput = document.getElementById('agent-command');
-    
-    if (websiteScrapeEnabled) {
-        websiteUrlInput.disabled = false;
-        websiteUrlInput.style.opacity = '1';
-    } else {
-        websiteUrlInput.disabled = true;
-        websiteUrlInput.style.opacity = '0.5';
-    }
-    
-    if (runCommandEnabled) {
-        commandInput.disabled = false;
-        commandInput.style.opacity = '1';
-    } else {
-        commandInput.disabled = true;
-        commandInput.style.opacity = '0.5';
-    }
-}
+// No longer needed - removed updateAgentToolFields function
 
 // Load app data (for edit mode)
 async function loadAppData() {
@@ -611,16 +637,17 @@ async function loadAppData() {
                 // Load agent configuration if agent type
                 if (appData.app_type === 'agent') {
                     try {
-                        const agentConfig = await invoke('get_agent_app', { app_id: appId });
+                        const agentConfig = await invoke('get_agent_app', { appId: appId });
+                        console.log('[AppForm] Loaded agent config:', agentConfig);
                         if (agentConfig) {
+                            console.log('[AppForm] Setting model to:', agentConfig.model);
                             document.getElementById('agent-model').value = agentConfig.model || '';
                             document.getElementById('agent-prompt').value = agentConfig.prompt || '';
-                            document.getElementById('agent-tool-notification').checked = agentConfig.tool_notification || false;
-                            document.getElementById('agent-tool-website-scrape').checked = agentConfig.tool_website_scrape || false;
-                            document.getElementById('agent-tool-run-command').checked = agentConfig.tool_run_command || false;
-                            document.getElementById('agent-website-url').value = agentConfig.website_url || '';
-                            document.getElementById('agent-command').value = agentConfig.command || '';
-                            updateAgentToolFields();
+                            document.getElementById('agent-input-command').value = agentConfig.command || '';
+                            document.getElementById('agent-input-website-url').value = agentConfig.websiteUrl || '';
+                            document.getElementById('agent-output-notification').checked = agentConfig.toolNotification || false;
+                            document.getElementById('agent-output-run-command').checked = agentConfig.toolRunCommand || false;
+                            console.log('[AppForm] Model dropdown value after setting:', document.getElementById('agent-model').value);
                         }
                     } catch (error) {
                         console.error('Failed to load agent configuration:', error);
@@ -859,23 +886,28 @@ async function saveApp() {
             if (appType === 'agent') {
                 const model = document.getElementById('agent-model').value.trim() || null;
                 const prompt = document.getElementById('agent-prompt').value.trim();
-                const toolNotification = document.getElementById('agent-tool-notification').checked;
-                const toolWebsiteScrape = document.getElementById('agent-tool-website-scrape').checked;
-                const toolRunCommand = document.getElementById('agent-tool-run-command').checked;
-                const websiteUrl = toolWebsiteScrape ? document.getElementById('agent-website-url').value.trim() || null : null;
-                const command = toolRunCommand ? document.getElementById('agent-command').value.trim() || null : null;
-                
+                const inputCommand = document.getElementById('agent-input-command').value.trim() || null;
+                const inputWebsiteUrl = document.getElementById('agent-input-website-url').value.trim() || null;
+                const toolNotification = document.getElementById('agent-output-notification').checked;
+                const toolRunCommand = document.getElementById('agent-output-run-command').checked;
+
+                // Website scrape is enabled if URL is provided
+                const toolWebsiteScrape = inputWebsiteUrl !== null && inputWebsiteUrl !== '';
+
+                const agentAppData = {
+                    appId: appData.id,
+                    model: model,
+                    prompt: prompt,
+                    toolNotification: toolNotification,
+                    toolWebsiteScrape: toolWebsiteScrape,
+                    toolRunCommand: toolRunCommand,
+                    websiteUrl: inputWebsiteUrl,
+                    command: inputCommand
+                };
+                console.log('[AppForm] Saving agent config:', agentAppData);
+
                 await invoke('save_agent_app', {
-                    agentApp: {
-                        app_id: appData.id,
-                        model: model,
-                        prompt: prompt,
-                        tool_notification: toolNotification,
-                        tool_website_scrape: toolWebsiteScrape,
-                        tool_run_command: toolRunCommand,
-                        website_url: websiteUrl,
-                        command: command
-                    }
+                    agentApp: agentAppData
                 });
             }
         } else {
@@ -919,22 +951,24 @@ async function saveApp() {
             if (appType === 'agent') {
                 const model = document.getElementById('agent-model').value.trim() || null;
                 const prompt = document.getElementById('agent-prompt').value.trim();
-                const toolNotification = document.getElementById('agent-tool-notification').checked;
-                const toolWebsiteScrape = document.getElementById('agent-tool-website-scrape').checked;
-                const toolRunCommand = document.getElementById('agent-tool-run-command').checked;
-                const websiteUrl = toolWebsiteScrape ? document.getElementById('agent-website-url').value.trim() || null : null;
-                const command = toolRunCommand ? document.getElementById('agent-command').value.trim() || null : null;
-                
+                const inputCommand = document.getElementById('agent-input-command').value.trim() || null;
+                const inputWebsiteUrl = document.getElementById('agent-input-website-url').value.trim() || null;
+                const toolNotification = document.getElementById('agent-output-notification').checked;
+                const toolRunCommand = document.getElementById('agent-output-run-command').checked;
+
+                // Website scrape is enabled if URL is provided
+                const toolWebsiteScrape = inputWebsiteUrl !== null && inputWebsiteUrl !== '';
+
                 await invoke('save_agent_app', {
                     agentApp: {
-                        app_id: appId,
+                        appId: appId,
                         model: model,
                         prompt: prompt,
-                        tool_notification: toolNotification,
-                        tool_website_scrape: toolWebsiteScrape,
-                        tool_run_command: toolRunCommand,
-                        website_url: websiteUrl,
-                        command: command
+                        toolNotification: toolNotification,
+                        toolWebsiteScrape: toolWebsiteScrape,
+                        toolRunCommand: toolRunCommand,
+                        websiteUrl: inputWebsiteUrl,
+                        command: inputCommand
                     }
                 });
             }
@@ -946,6 +980,26 @@ async function saveApp() {
     } catch (error) {
         console.error('Failed to save app:', error);
         alert('Failed to save application: ' + error);
+    }
+}
+
+// Load models for agent model dropdown
+async function loadAgentModels() {
+    try {
+        const models = await invoke('get_models');
+        const modelSelect = document.getElementById('agent-model');
+        modelSelect.innerHTML = '<option value="">Use default from settings</option>';
+
+        if (models && models.length > 0) {
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.id;
+                modelSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('[AppForm] Failed to load models:', error);
     }
 }
 
@@ -970,6 +1024,10 @@ async function init() {
 
         // Apply theme
         await applyTheme();
+
+        // Load models for agent model dropdown BEFORE loading app data
+        // This ensures the dropdown is populated before we try to set the selected value
+        await loadAgentModels();
 
         // Load app data
         await loadAppData();
@@ -1151,31 +1209,20 @@ async function init() {
             });
         }
 
-        // Agent tool checkbox handlers
-        document.getElementById('agent-tool-website-scrape').addEventListener('change', updateAgentToolFields);
-        document.getElementById('agent-tool-run-command').addEventListener('change', updateAgentToolFields);
-        
-        // Load models for agent model dropdown
-        async function loadAgentModels() {
+        // Browse button for agent input command
+        document.getElementById('browse-command-btn').addEventListener('click', async () => {
             try {
-                const models = await invoke('get_models');
-                const modelSelect = document.getElementById('agent-model');
-                modelSelect.innerHTML = '<option value="">Use default from settings</option>';
-                
-                if (models && models.length > 0) {
-                    models.forEach(model => {
-                        const option = document.createElement('option');
-                        option.value = model.id;
-                        option.textContent = model.id;
-                        modelSelect.appendChild(option);
-                    });
+                const selected = await invoke('open_file_dialog', {
+                    title: 'Select Command',
+                    filters: []
+                });
+                if (selected) {
+                    document.getElementById('agent-input-command').value = selected;
                 }
             } catch (error) {
-                console.error('[AppForm] Failed to load models:', error);
+                console.error('Failed to open file dialog:', error);
             }
-        }
-        
-        loadAgentModels();
+        });
 
         // Save button
         document.getElementById('save-app-btn').addEventListener('click', saveApp);

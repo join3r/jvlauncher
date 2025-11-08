@@ -91,8 +91,11 @@ pub fn fetch_models(pool: &DbPool) -> Result<Vec<AIModel>> {
 /// Fetch models from a specific endpoint (allows fetching even if AI not enabled in settings)
 pub fn fetch_models_from_endpoint(pool: &DbPool, endpoint_url: &str, api_key: &str) -> Result<Vec<AIModel>> {
     let url = format!("{}/v1/models", endpoint_url.trim_end_matches('/'));
-    
-    let client = reqwest::blocking::Client::new();
+
+    // Create client with 30 second timeout for fetching models list
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()?;
     let mut request = client.get(&url);
     
     if !api_key.is_empty() {
@@ -107,7 +110,7 @@ pub fn fetch_models_from_endpoint(pool: &DbPool, endpoint_url: &str, api_key: &s
     }
     
     let models_response: ModelsResponse = response.json()?;
-    
+
     let models: Vec<AIModel> = models_response
         .data
         .into_iter()
@@ -116,10 +119,10 @@ pub fn fetch_models_from_endpoint(pool: &DbPool, endpoint_url: &str, api_key: &s
             created: m.created,
         })
         .collect();
-    
+
     // Save models to database
     crate::database::save_models(pool, models.clone())?;
-    
+
     Ok(models)
 }
 
@@ -137,8 +140,12 @@ pub fn chat_completion(
     }
 
     let url = format!("{}/v1/chat/completions", settings.endpoint_url.trim_end_matches('/'));
-    
-    let client = reqwest::blocking::Client::new();
+
+    // Create client with extended timeout for LLM requests (5 minutes)
+    // LLMs can take a long time to generate responses, especially for complex queries
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(300))
+        .build()?;
     let mut request_builder = client.post(&url);
     
     if !settings.api_key.is_empty() {
@@ -195,13 +202,13 @@ impl ToolDefinition {
     pub fn notification() -> Self {
         Self {
             name: "send_notification".to_string(),
-            description: "Send a notification to the user. Use this when you need to inform the user about something important.".to_string(),
+            description: "Send a notification to the user to inform them about results, findings, errors, or important information. ALWAYS use this tool to communicate your findings or results to the user. Examples: 'Website check complete: Found 3 new articles', 'Error: Unable to access the website', 'Task completed successfully', 'No changes detected since last check'.".to_string(),
             parameters: json!({
                 "type": "object",
                 "properties": {
                     "message": {
                         "type": "string",
-                        "description": "The notification message to display to the user"
+                        "description": "The notification message to display to the user. Should be clear, concise, and informative."
                     }
                 },
                 "required": ["message"]
@@ -231,13 +238,13 @@ impl ToolDefinition {
     pub fn run_command() -> Self {
         Self {
             name: "run_command".to_string(),
-            description: "Run a system command. You can only run the exact command provided - you cannot modify or alter it. Use this when you need to execute a specific command.".to_string(),
+            description: "Execute a system command and get its output. IMPORTANT: You can ONLY run the exact command that was pre-configured - you cannot modify, alter, or add arguments to it. The command will be executed and you will receive its stdout, stderr, and exit code. Use this to gather information from system commands, then use send_notification to report the results to the user.".to_string(),
             parameters: json!({
                 "type": "object",
                 "properties": {
                     "command": {
                         "type": "string",
-                        "description": "The exact command to run (cannot be modified)"
+                        "description": "The exact pre-configured command to run (must match exactly, cannot be modified)"
                     }
                 },
                 "required": ["command"]

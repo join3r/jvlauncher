@@ -2,15 +2,17 @@ use crate::database::DbPool;
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 use std::process::Command;
+use tauri::AppHandle;
 
 /// Execute a tool call
 pub fn execute_tool(
     pool: &DbPool,
+    app_handle: &AppHandle,
     tool_name: &str,
     arguments: &Value,
 ) -> Result<String> {
     match tool_name {
-        "send_notification" => execute_notification(pool, arguments),
+        "send_notification" => execute_notification(pool, app_handle, arguments),
         "scrape_website" => execute_scrape_website(arguments),
         "run_command" => execute_run_command(arguments),
         _ => Err(anyhow!("Unknown tool: {}", tool_name)),
@@ -18,14 +20,19 @@ pub fn execute_tool(
 }
 
 /// Execute notification tool
-fn execute_notification(pool: &DbPool, arguments: &Value) -> Result<String> {
+fn execute_notification(pool: &DbPool, app_handle: &AppHandle, arguments: &Value) -> Result<String> {
     let message = arguments
         .get("message")
         .and_then(|v| v.as_str())
         .ok_or_else(|| anyhow!("Missing 'message' argument"))?;
-    
+
     crate::database::create_notification(pool, message)?;
-    
+
+    // Open the notifications window to show the notification
+    if let Err(e) = crate::commands::open_notifications_window(app_handle.clone()) {
+        eprintln!("Failed to open notifications window: {}", e);
+    }
+
     Ok(format!("Notification sent: {}", message))
 }
 

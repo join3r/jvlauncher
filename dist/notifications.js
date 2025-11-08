@@ -17,6 +17,40 @@ const getCurrentWindow = () => {
     return tauri.window.getCurrentWindow();
 };
 
+// Detect platform and apply platform-specific class
+function detectPlatform() {
+    try {
+        const tauri = getTauriAPI();
+        const root = document.documentElement;
+
+        if (tauri && tauri.os && tauri.os.platform) {
+            const platform = tauri.os.platform();
+            if (platform === 'macos') {
+                root.classList.add('platform-macos');
+            } else {
+                root.classList.add('platform-other');
+            }
+        } else {
+            // Fallback: detect from user agent
+            const userAgent = navigator.userAgent.toLowerCase();
+            if (userAgent.includes('mac')) {
+                root.classList.add('platform-macos');
+            } else {
+                root.classList.add('platform-other');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to detect platform:', error);
+        // Fallback
+        const userAgent = navigator.userAgent.toLowerCase();
+        if (userAgent.includes('mac')) {
+            document.documentElement.classList.add('platform-macos');
+        } else {
+            document.documentElement.classList.add('platform-other');
+        }
+    }
+}
+
 // Apply theme
 async function applyTheme() {
     try {
@@ -45,7 +79,7 @@ function formatTimestamp(timestamp) {
 // Load notifications
 async function loadNotifications() {
     try {
-        const notifications = await invoke('get_notifications', { include_dismissed: false });
+        const notifications = await invoke('get_notifications', { includeDismissed: false });
         const list = document.getElementById('notifications-list');
         
         if (notifications.length === 0) {
@@ -122,11 +156,12 @@ window.dismissNotification = dismissNotification;
 
 // Initialize
 async function init() {
+    detectPlatform();
     await applyTheme();
     await loadNotifications();
-    
+
     document.getElementById('dismiss-all-btn').addEventListener('click', dismissAll);
-    
+
     // Auto-refresh every 2 seconds
     setInterval(loadNotifications, 2000);
 }

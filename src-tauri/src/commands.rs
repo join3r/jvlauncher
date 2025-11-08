@@ -921,6 +921,11 @@ pub fn open_ai_queue_window(app_handle: AppHandle) -> Result<(), String> {
         let _ = main_window.set_always_on_top(false);
     }
 
+    // Close settings window if open
+    if let Some(settings_window) = app_handle.get_webview_window("settings") {
+        let _ = settings_window.close();
+    }
+
     // Check if window already exists
     if let Some(window) = app_handle.get_webview_window(window_label) {
         window.show().map_err(|e| format!("Failed to show window: {}", e))?;
@@ -981,7 +986,7 @@ pub fn open_queue_detail_window(app_handle: AppHandle, queue_id: i64) -> Result<
     .inner_size(700.0, 600.0)
     .resizable(true)
     .center()
-    .always_on_top(false)
+    .always_on_top(true)
     .skip_taskbar(false)
     .build()
     .map_err(|e| format!("Failed to create queue detail window: {}", e))?;

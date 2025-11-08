@@ -128,6 +128,7 @@ pub struct AIModel {
 
 /// Agent app configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AgentApp {
     pub app_id: i64,
     pub model: Option<String>,
@@ -743,10 +744,10 @@ pub fn get_models(pool: &DbPool) -> Result<Vec<AIModel>> {
 /// Save AI models
 pub fn save_models(pool: &DbPool, models: Vec<AIModel>) -> Result<()> {
     let conn = pool.get()?;
-    
+
     // Clear existing models
     conn.execute("DELETE FROM ai_models", [])?;
-    
+
     // Insert new models
     for model in models {
         conn.execute(
@@ -754,7 +755,7 @@ pub fn save_models(pool: &DbPool, models: Vec<AIModel>) -> Result<()> {
             params![model.id, model.created],
         )?;
     }
-    
+
     Ok(())
 }
 
