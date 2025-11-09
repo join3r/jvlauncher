@@ -57,6 +57,7 @@ pub struct Choice {
 
 #[derive(Debug, Deserialize)]
 pub struct ResponseMessage {
+    #[allow(dead_code)]
     pub role: String,
     pub content: Option<String>,
     #[serde(default)]
@@ -65,7 +66,9 @@ pub struct ResponseMessage {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ToolCall {
+    #[allow(dead_code)]
     pub id: String,
+    #[allow(dead_code)]
     #[serde(rename = "type")]
     pub tool_type: String,
     pub function: ToolCallFunction,

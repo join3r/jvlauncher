@@ -48,9 +48,10 @@ fn extract_main_content(document: &Html, html: &str) -> String {
             if let Some(element) = document.select(&selector).next() {
                 // Found main content, extract text from it
                 let html_fragment = element.html();
-                let text = from_read(html_fragment.as_bytes(), 100000);
-                if !text.trim().is_empty() && text.len() > 200 {
-                    return text;
+                if let Ok(text) = from_read(html_fragment.as_bytes(), 100000) {
+                    if !text.trim().is_empty() && text.len() > 200 {
+                        return text;
+                    }
                 }
             }
         }
@@ -78,8 +79,7 @@ fn extract_main_content(document: &Html, html: &str) -> String {
     }
 
     // Extract text from cleaned HTML
-    let text = from_read(cleaned_html.as_bytes(), 100000);
-    text
+    from_read(cleaned_html.as_bytes(), 100000).unwrap_or_default()
 }
 
 /// Apply semantic chunking to preserve context and fit within token limits

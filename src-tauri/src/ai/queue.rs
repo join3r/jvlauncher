@@ -84,11 +84,12 @@ impl QueueManager {
     }
     
     /// Get next pending item ID (if available and can process)
+    #[allow(dead_code)]
     pub fn get_next_pending(&self) -> Option<i64> {
         if !self.can_process() {
             return None;
         }
-        
+
         self.pending_queue.lock().unwrap().pop_front()
     }
 }
