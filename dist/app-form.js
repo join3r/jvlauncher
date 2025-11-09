@@ -480,6 +480,8 @@ function updateFieldsVisibility() {
     const agentModelGroup = document.getElementById('agent-model-group');
     const agentPromptLabel = document.getElementById('agent-prompt-label');
     const agentPromptGroup = document.getElementById('agent-prompt-group');
+    const alwaysOnTopLabel = document.getElementById('always-on-top-label');
+    const alwaysOnTopGroup = document.getElementById('always-on-top-group');
 
     if (type === 'webapp') {
         urlLabel.style.display = 'block';
@@ -492,6 +494,8 @@ function updateFieldsVisibility() {
         oauthGroup.style.display = 'flex';
         autoCloseLabel.style.display = 'block';
         autoCloseGroup.style.display = 'flex';
+        alwaysOnTopLabel.style.display = 'block';
+        alwaysOnTopGroup.style.display = 'flex';
         binaryLabel.style.display = 'none';
         binaryGroup.style.display = 'none';
         paramsLabel.style.display = 'none';
@@ -532,6 +536,8 @@ function updateFieldsVisibility() {
         oauthGroup.style.display = 'none';
         autoCloseLabel.style.display = 'none';
         autoCloseGroup.style.display = 'none';
+        alwaysOnTopLabel.style.display = 'none';
+        alwaysOnTopGroup.style.display = 'none';
         binaryLabel.style.display = 'none';
         binaryGroup.style.display = 'none';
         paramsLabel.style.display = 'none';
@@ -572,6 +578,9 @@ function updateFieldsVisibility() {
         oauthGroup.style.display = 'none';
         autoCloseLabel.style.display = 'none';
         autoCloseGroup.style.display = 'none';
+        // Show always on top for app and tui types
+        alwaysOnTopLabel.style.display = type === 'tui' ? 'block' : 'none';
+        alwaysOnTopGroup.style.display = type === 'tui' ? 'flex' : 'none';
         binaryLabel.style.display = 'block';
         binaryGroup.style.display = 'flex';
         paramsLabel.style.display = 'block';
@@ -647,6 +656,7 @@ async function loadAppData() {
                     document.getElementById('show-nav-controls').checked = appData.show_nav_controls || false;
                     document.getElementById('open-external-links').checked = appData.open_external_links || false;
                     document.getElementById('enable-oauth').checked = appData.enable_oauth || false;
+                    document.getElementById('always-on-top').checked = appData.always_on_top || false;
 
                     // Set auto-close timeout
                     const enableAutoCloseCheckbox = document.getElementById('enable-auto-close');
@@ -664,6 +674,11 @@ async function loadAppData() {
 
                     // Update visibility based on checkbox state
                     updateAutoCloseTimeoutVisibility();
+                }
+
+                // Set always on top for tui apps
+                if (appData.app_type === 'tui') {
+                    document.getElementById('always-on-top').checked = appData.always_on_top || false;
                 }
 
                 // Load agent configuration if agent type
@@ -884,6 +899,7 @@ async function saveApp() {
             const showNavControls = appType === 'webapp' ? document.getElementById('show-nav-controls').checked : null;
             const openExternalLinks = appType === 'webapp' ? document.getElementById('open-external-links').checked : null;
             const enableOauth = appType === 'webapp' ? document.getElementById('enable-oauth').checked : null;
+            const alwaysOnTop = (appType === 'webapp' || appType === 'tui') ? document.getElementById('always-on-top').checked : null;
 
             // Get auto-close timeout (null if disabled, otherwise the number value)
             let autoCloseTimeout = null;
@@ -915,7 +931,8 @@ async function saveApp() {
                     show_nav_controls: showNavControls,
                     open_external_links: openExternalLinks,
                     enable_oauth: enableOauth,
-                    auto_close_timeout: autoCloseTimeout
+                    auto_close_timeout: autoCloseTimeout,
+                    always_on_top: alwaysOnTop
                 }
             });
             
@@ -954,6 +971,7 @@ async function saveApp() {
             const showNavControls = appType === 'webapp' ? document.getElementById('show-nav-controls').checked : null;
             const openExternalLinks = appType === 'webapp' ? document.getElementById('open-external-links').checked : null;
             const enableOauth = appType === 'webapp' ? document.getElementById('enable-oauth').checked : null;
+            const alwaysOnTop = (appType === 'webapp' || appType === 'tui') ? document.getElementById('always-on-top').checked : null;
 
             // Get auto-close timeout (null if disabled, otherwise the number value)
             let autoCloseTimeout = null;
@@ -982,7 +1000,8 @@ async function saveApp() {
                     show_nav_controls: showNavControls,
                     open_external_links: openExternalLinks,
                     enable_oauth: enableOauth,
-                    auto_close_timeout: autoCloseTimeout
+                    auto_close_timeout: autoCloseTimeout,
+                    always_on_top: alwaysOnTop
                 }
             });
             

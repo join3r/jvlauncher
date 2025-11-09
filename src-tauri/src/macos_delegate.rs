@@ -159,8 +159,9 @@ pub fn activate_app_by_bundle_id(bundle_id: &str) -> bool {
             let is_equal: bool = msg_send![app_bundle_id, isEqualToString: bundle_id_nsstring];
             if is_equal {
                 // Found the app, activate it
-                // NSApplicationActivateIgnoringOtherApps = 1 << 1 = 2
-                let options: usize = 2;
+                // Use default activation (0) to prevent hiding other apps' windows
+                // Previously used NSApplicationActivateIgnoringOtherApps (2) which could hide other windows
+                let options: usize = 0;
                 let success: bool = msg_send![app, activateWithOptions: options];
                 return success;
             }

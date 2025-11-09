@@ -66,6 +66,7 @@ pub struct App {
     pub open_external_links: Option<bool>,
     pub enable_oauth: Option<bool>,
     pub auto_close_timeout: Option<i32>,
+    pub always_on_top: Option<bool>,
 }
 
 /// Data for creating a new app
@@ -83,6 +84,7 @@ pub struct NewApp {
     pub open_external_links: Option<bool>,
     pub enable_oauth: Option<bool>,
     pub auto_close_timeout: Option<i32>,
+    pub always_on_top: Option<bool>,
 }
 
 /// Application settings
@@ -244,6 +246,10 @@ fn create_schema(conn: &Connection) -> Result<()> {
     let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN open_external_links INTEGER DEFAULT 0", []);
     let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN enable_oauth INTEGER DEFAULT 0", []);
     let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN auto_close_timeout INTEGER", []);
+    let _ = conn.execute("ALTER TABLE webapp_details ADD COLUMN always_on_top INTEGER DEFAULT 0", []);
+
+    // Add always_on_top column to app_details table if it doesn't exist
+    let _ = conn.execute("ALTER TABLE app_details ADD COLUMN always_on_top INTEGER DEFAULT 0", []);
 
     // Settings table
     conn.execute(
@@ -386,8 +392,8 @@ pub fn get_all_apps(pool: &DbPool) -> Result<Vec<App>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
         "SELECT a.id, a.app_type, a.name, a.icon_path, a.position, a.shortcut, a.global_shortcut,
-                ad.binary_path, ad.cli_params,
-                wd.url, wd.session_data_path, wd.show_nav_controls, wd.open_external_links, wd.enable_oauth, wd.auto_close_timeout
+                ad.binary_path, ad.cli_params, ad.always_on_top as ad_always_on_top,
+                wd.url, wd.session_data_path, wd.show_nav_controls, wd.open_external_links, wd.enable_oauth, wd.auto_close_timeout, wd.always_on_top as wd_always_on_top
          FROM apps a
          LEFT JOIN app_details ad ON a.id = ad.app_id
          LEFT JOIN webapp_details wd ON a.id = wd.app_id
@@ -395,10 +401,15 @@ pub fn get_all_apps(pool: &DbPool) -> Result<Vec<App>> {
     )?;
 
     let apps = stmt.query_map([], |row| {
-        let show_nav_controls: Option<i32> = row.get(11).ok();
-        let open_external_links: Option<i32> = row.get(12).ok();
-        let enable_oauth: Option<i32> = row.get(13).ok();
-        let auto_close_timeout: Option<i32> = row.get(14).ok();
+        let show_nav_controls: Option<i32> = row.get(12).ok();
+        let open_external_links: Option<i32> = row.get(13).ok();
+        let enable_oauth: Option<i32> = row.get(14).ok();
+        let auto_close_timeout: Option<i32> = row.get(15).ok();
+        let ad_always_on_top: Option<i32> = row.get(9).ok();
+        let wd_always_on_top: Option<i32> = row.get(16).ok();
+        // Use webapp always_on_top if available, otherwise use app_details always_on_top
+        let always_on_top = wd_always_on_top.or(ad_always_on_top).map(|v| v != 0);
+
         Ok(App {
             id: row.get(0)?,
             app_type: AppType::from_str(&row.get::<_, String>(1)?),
@@ -409,12 +420,13 @@ pub fn get_all_apps(pool: &DbPool) -> Result<Vec<App>> {
             global_shortcut: row.get(6)?,
             binary_path: row.get(7)?,
             cli_params: row.get(8)?,
-            url: row.get(9)?,
-            session_data_path: row.get(10)?,
+            url: row.get(10)?,
+            session_data_path: row.get(11)?,
             show_nav_controls: show_nav_controls.map(|v| v != 0),
             open_external_links: open_external_links.map(|v| v != 0),
             enable_oauth: enable_oauth.map(|v| v != 0),
             auto_close_timeout,
+            always_on_top,
         })
     })?
     .collect::<Result<Vec<_>, _>>()?;
@@ -453,10 +465,11 @@ pub fn create_app(pool: &DbPool, new_app: NewApp, session_dir: Option<PathBuf>) 
     match new_app.app_type {
         AppType::App | AppType::Tui => {
             if let Some(binary_path) = new_app.binary_path {
+                let always_on_top = new_app.always_on_top.unwrap_or(false);
                 conn.execute(
-                    "INSERT INTO app_details (app_id, binary_path, cli_params)
-                     VALUES (?1, ?2, ?3)",
-                    params![app_id, binary_path, new_app.cli_params],
+                    "INSERT INTO app_details (app_id, binary_path, cli_params, always_on_top)
+                     VALUES (?1, ?2, ?3, ?4)",
+                    params![app_id, binary_path, new_app.cli_params, if always_on_top { 1 } else { 0 }],
                 )?;
             }
         }
@@ -474,10 +487,11 @@ pub fn create_app(pool: &DbPool, new_app: NewApp, session_dir: Option<PathBuf>) 
                 let show_nav_controls = new_app.show_nav_controls.unwrap_or(false);
                 let open_external_links = new_app.open_external_links.unwrap_or(false);
                 let enable_oauth = new_app.enable_oauth.unwrap_or(false);
+                let always_on_top = new_app.always_on_top.unwrap_or(false);
 
                 conn.execute(
-                    "INSERT INTO webapp_details (app_id, url, session_data_path, show_nav_controls, open_external_links, enable_oauth, auto_close_timeout)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                    "INSERT INTO webapp_details (app_id, url, session_data_path, show_nav_controls, open_external_links, enable_oauth, auto_close_timeout, always_on_top)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
                     params![
                         app_id,
                         url,
@@ -485,7 +499,8 @@ pub fn create_app(pool: &DbPool, new_app: NewApp, session_dir: Option<PathBuf>) 
                         if show_nav_controls { 1 } else { 0 },
                         if open_external_links { 1 } else { 0 },
                         if enable_oauth { 1 } else { 0 },
-                        new_app.auto_close_timeout
+                        new_app.auto_close_timeout,
+                        if always_on_top { 1 } else { 0 }
                     ],
                 )?;
             }
@@ -508,10 +523,11 @@ pub fn update_app(pool: &DbPool, app: App) -> Result<()> {
     // Update type-specific details
     match app.app_type {
         AppType::App | AppType::Tui => {
+            let always_on_top = app.always_on_top.unwrap_or(false);
             conn.execute(
-                "UPDATE app_details SET binary_path = ?1, cli_params = ?2
-                 WHERE app_id = ?3",
-                params![app.binary_path, app.cli_params, app.id],
+                "UPDATE app_details SET binary_path = ?1, cli_params = ?2, always_on_top = ?3
+                 WHERE app_id = ?4",
+                params![app.binary_path, app.cli_params, if always_on_top { 1 } else { 0 }, app.id],
             )?;
         }
         AppType::Agent => {
@@ -522,15 +538,17 @@ pub fn update_app(pool: &DbPool, app: App) -> Result<()> {
             let show_nav_controls = app.show_nav_controls.unwrap_or(false);
             let open_external_links = app.open_external_links.unwrap_or(false);
             let enable_oauth = app.enable_oauth.unwrap_or(false);
+            let always_on_top = app.always_on_top.unwrap_or(false);
             conn.execute(
-                "UPDATE webapp_details SET url = ?1, show_nav_controls = ?2, open_external_links = ?3, enable_oauth = ?4, auto_close_timeout = ?5
-                 WHERE app_id = ?6",
+                "UPDATE webapp_details SET url = ?1, show_nav_controls = ?2, open_external_links = ?3, enable_oauth = ?4, auto_close_timeout = ?5, always_on_top = ?6
+                 WHERE app_id = ?7",
                 params![
                     app.url,
                     if show_nav_controls { 1 } else { 0 },
                     if open_external_links { 1 } else { 0 },
                     if enable_oauth { 1 } else { 0 },
                     app.auto_close_timeout,
+                    if always_on_top { 1 } else { 0 },
                     app.id
                 ],
             )?;

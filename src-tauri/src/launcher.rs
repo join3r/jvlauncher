@@ -520,6 +520,11 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
             .center();
     }
 
+    // Apply always on top setting
+    if app.always_on_top.unwrap_or(false) {
+        builder = builder.always_on_top(true);
+    }
+
     // Capture the current app before creating and showing the window
     crate::shortcut_manager::capture_current_app();
 
@@ -609,7 +614,8 @@ fn launch_tui(app: &App, app_handle: &AppHandle) -> Result<()> {
     crate::shortcut_manager::capture_current_app();
 
     // Launch in terminal window
-    create_terminal_window(app_handle, app.id, &window_label, &app.name, binary_path, &args)?;
+    let always_on_top = app.always_on_top.unwrap_or(false);
+    create_terminal_window(app_handle, app.id, &window_label, &app.name, binary_path, &args, always_on_top)?;
 
     Ok(())
 }

@@ -13,6 +13,7 @@ pub fn create_terminal_window(
     title: &str,
     command: &str,
     args: &[String],
+    always_on_top: bool,
 ) -> Result<()> {
     let window_label = window_label.to_string();
 
@@ -87,14 +88,20 @@ pub fn create_terminal_window(
     let master = Arc::new(Mutex::new(pair.master));
 
     // Create window to display terminal
-    let window = tauri::WebviewWindowBuilder::new(
+    let mut builder = tauri::WebviewWindowBuilder::new(
         app_handle,
         &window_label,
         tauri::WebviewUrl::App("terminal.html".into())
     )
     .title(title)
-    .inner_size(800.0, 600.0)
-    .build()?;
+    .inner_size(800.0, 600.0);
+
+    // Apply always on top setting
+    if always_on_top {
+        builder = builder.always_on_top(true);
+    }
+
+    let window = builder.build()?;
 
     // Register window with shortcut manager for toggle behavior
     crate::shortcut_manager::register_app_window(app_id, window_label.clone());
