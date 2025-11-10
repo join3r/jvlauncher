@@ -311,11 +311,14 @@ function switchTab(tabName) {
 function updateAISettingsDisabled() {
     const enabled = document.getElementById('ai-enabled').checked;
     const aiSettingsRows = document.getElementById('ai-settings-rows');
-    
+    const aiWarning = document.getElementById('ai-warning');
+
     if (enabled) {
         aiSettingsRows.classList.remove('ai-settings-disabled');
+        aiWarning.classList.add('visible');
     } else {
         aiSettingsRows.classList.add('ai-settings-disabled');
+        aiWarning.classList.remove('visible');
     }
 }
 

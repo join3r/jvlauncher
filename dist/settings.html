@@ -169,6 +169,25 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        /* AI experimental warning */
+        .ai-warning {
+            display: none;
+            padding: 10px 12px;
+            margin-bottom: 16px;
+            background: rgba(255, 152, 0, 0.1);
+            border: 1px solid rgba(255, 152, 0, 0.3);
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+        .ai-warning.visible {
+            display: block;
+        }
+        .ai-warning strong {
+            color: #ff9800;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -263,6 +282,9 @@
                         <span>Enable AI features</span>
                     </label>
                 </div>
+            </div>
+            <div class="ai-warning" id="ai-warning">
+                <strong>⚠️ Experimental Feature:</strong> AI features are currently experimental and not stable. They are being actively developed and tested. Expect bugs, unexpected behavior, and potential changes.
             </div>
             <div class="settings-rows" id="ai-settings-rows">
                 <div class="row-label">Endpoint URL</div>
