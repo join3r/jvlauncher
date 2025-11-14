@@ -10,6 +10,9 @@ static APP_SHORTCUTS: Mutex<Option<HashMap<String, i64>>> = Mutex::new(None);
 /// Global state to track app window labels by app ID
 static APP_WINDOWS: Mutex<Option<HashMap<i64, String>>> = Mutex::new(None);
 
+/// Global state to track hide_on_shortcut setting by app ID
+static APP_HIDE_ON_SHORTCUT: Mutex<Option<HashMap<i64, bool>>> = Mutex::new(None);
+
 /// Global state to track the previously focused application (by bundle ID)
 /// This allows us to restore focus when hiding jvlauncher windows
 static PREVIOUS_APP: Mutex<Option<String>> = Mutex::new(None);
@@ -27,6 +30,14 @@ fn init_app_windows() {
     let mut windows = APP_WINDOWS.lock().unwrap();
     if windows.is_none() {
         *windows = Some(HashMap::new());
+    }
+}
+
+/// Initialize the app hide_on_shortcut map
+fn init_app_hide_on_shortcut() {
+    let mut hide_settings = APP_HIDE_ON_SHORTCUT.lock().unwrap();
+    if hide_settings.is_none() {
+        *hide_settings = Some(HashMap::new());
     }
 }
 
@@ -131,9 +142,11 @@ pub fn register_app_shortcut(
     app_handle: &AppHandle,
     app_id: i64,
     shortcut_str: &str,
+    hide_on_shortcut: bool,
 ) -> Result<()> {
     init_app_shortcuts();
     init_app_windows();
+    init_app_hide_on_shortcut();
 
     // Parse the shortcut string
     let shortcut: Shortcut = shortcut_str.parse()
@@ -147,12 +160,29 @@ pub fn register_app_shortcut(
         }
     }
 
+    // Store the hide_on_shortcut setting
+    {
+        let mut hide_settings = APP_HIDE_ON_SHORTCUT.lock().unwrap();
+        if let Some(map) = hide_settings.as_mut() {
+            map.insert(app_id, hide_on_shortcut);
+        }
+    }
+
     // Register the shortcut
     let app_handle_clone = app_handle.clone();
     app_handle.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, event| {
         use tauri_plugin_global_shortcut::ShortcutState;
 
         if event.state() == ShortcutState::Pressed {
+            // Get the hide_on_shortcut setting for this app
+            let should_hide = {
+                let hide_settings = APP_HIDE_ON_SHORTCUT.lock().unwrap();
+                hide_settings.as_ref()
+                    .and_then(|map| map.get(&app_id))
+                    .copied()
+                    .unwrap_or(false)
+            };
+
             // Check if the app's window is already open and focused
             let window_label = {
                 let windows = APP_WINDOWS.lock().unwrap();
@@ -168,21 +198,32 @@ pub fn register_app_shortcut(
                     let is_visible = window.is_visible().unwrap_or(false);
 
                     if is_focused && is_visible {
-                        // Window is focused, hide it (toggle off) and restore previous app
-                        let _ = window.hide();
-                        restore_previous_app();
+                        if should_hide {
+                            // Hide mode: hide the window and restore previous app
+                            let _ = window.hide();
+                            restore_previous_app();
+                        } else {
+                            // Close mode: close the window
+                            let _ = window.close();
+                        }
                         return;
                     } else if is_visible {
                         // Window is visible but not focused, capture current app then focus it
                         capture_previous_app();
                         let _ = window.set_focus();
                         return;
+                    } else if should_hide {
+                        // Window exists but is hidden, show and focus it
+                        capture_previous_app();
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                        return;
                     }
-                    // If window exists but is hidden, fall through to launch
+                    // If window exists but is hidden and not in hide mode, fall through to launch
                 }
             }
 
-            // Window doesn't exist or is hidden, capture current app then launch
+            // Window doesn't exist or is hidden (in close mode), capture current app then launch
             capture_previous_app();
             let _ = app_handle_clone.emit("launch-app-by-shortcut", app_id);
         }
@@ -194,9 +235,11 @@ pub fn register_app_shortcut(
 /// Unregister a global shortcut for an app
 pub fn unregister_app_shortcut(
     app_handle: &AppHandle,
+    app_id: i64,
     shortcut_str: &str,
 ) -> Result<()> {
     init_app_shortcuts();
+    init_app_hide_on_shortcut();
 
     // Parse the shortcut string
     let shortcut: Shortcut = shortcut_str.parse()
@@ -207,6 +250,14 @@ pub fn unregister_app_shortcut(
         let mut shortcuts = APP_SHORTCUTS.lock().unwrap();
         if let Some(map) = shortcuts.as_mut() {
             map.remove(shortcut_str);
+        }
+    }
+
+    // Remove hide_on_shortcut setting
+    {
+        let mut hide_settings = APP_HIDE_ON_SHORTCUT.lock().unwrap();
+        if let Some(map) = hide_settings.as_mut() {
+            map.remove(&app_id);
         }
     }
 

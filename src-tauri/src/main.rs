@@ -100,10 +100,12 @@ fn main() {
                 for app_item in apps {
                     if let Some(global_shortcut) = &app_item.global_shortcut {
                         if !global_shortcut.is_empty() {
+                            let hide_on_shortcut = app_item.hide_on_shortcut.unwrap_or(false);
                             if let Err(e) = shortcut_manager::register_app_shortcut(
                                 &app_handle,
                                 app_item.id,
                                 global_shortcut,
+                                hide_on_shortcut,
                             ) {
                                 eprintln!("Failed to register global shortcut for app {}: {}", app_item.id, e);
                             }

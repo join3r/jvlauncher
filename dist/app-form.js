@@ -482,6 +482,8 @@ function updateFieldsVisibility() {
     const agentPromptGroup = document.getElementById('agent-prompt-group');
     const alwaysOnTopLabel = document.getElementById('always-on-top-label');
     const alwaysOnTopGroup = document.getElementById('always-on-top-group');
+    const hideOnShortcutLabel = document.getElementById('hide-on-shortcut-label');
+    const hideOnShortcutGroup = document.getElementById('hide-on-shortcut-group');
 
     if (type === 'webapp') {
         urlLabel.style.display = 'block';
@@ -496,6 +498,8 @@ function updateFieldsVisibility() {
         autoCloseGroup.style.display = 'flex';
         alwaysOnTopLabel.style.display = 'block';
         alwaysOnTopGroup.style.display = 'flex';
+        hideOnShortcutLabel.style.display = 'block';
+        hideOnShortcutGroup.style.display = 'flex';
         binaryLabel.style.display = 'none';
         binaryGroup.style.display = 'none';
         paramsLabel.style.display = 'none';
@@ -538,6 +542,8 @@ function updateFieldsVisibility() {
         autoCloseGroup.style.display = 'none';
         alwaysOnTopLabel.style.display = 'none';
         alwaysOnTopGroup.style.display = 'none';
+        hideOnShortcutLabel.style.display = 'none';
+        hideOnShortcutGroup.style.display = 'none';
         binaryLabel.style.display = 'none';
         binaryGroup.style.display = 'none';
         paramsLabel.style.display = 'none';
@@ -578,9 +584,11 @@ function updateFieldsVisibility() {
         oauthGroup.style.display = 'none';
         autoCloseLabel.style.display = 'none';
         autoCloseGroup.style.display = 'none';
-        // Show always on top for app and tui types
+        // Show always on top and hide on shortcut for tui types
         alwaysOnTopLabel.style.display = type === 'tui' ? 'block' : 'none';
         alwaysOnTopGroup.style.display = type === 'tui' ? 'flex' : 'none';
+        hideOnShortcutLabel.style.display = type === 'tui' ? 'block' : 'none';
+        hideOnShortcutGroup.style.display = type === 'tui' ? 'flex' : 'none';
         binaryLabel.style.display = 'block';
         binaryGroup.style.display = 'flex';
         paramsLabel.style.display = 'block';
@@ -657,6 +665,7 @@ async function loadAppData() {
                     document.getElementById('open-external-links').checked = appData.open_external_links || false;
                     document.getElementById('enable-oauth').checked = appData.enable_oauth || false;
                     document.getElementById('always-on-top').checked = appData.always_on_top || false;
+                    document.getElementById('hide-on-shortcut').checked = appData.hide_on_shortcut || false;
 
                     // Set auto-close timeout
                     const enableAutoCloseCheckbox = document.getElementById('enable-auto-close');
@@ -676,9 +685,10 @@ async function loadAppData() {
                     updateAutoCloseTimeoutVisibility();
                 }
 
-                // Set always on top for tui apps
+                // Set always on top and hide on shortcut for tui apps
                 if (appData.app_type === 'tui') {
                     document.getElementById('always-on-top').checked = appData.always_on_top || false;
+                    document.getElementById('hide-on-shortcut').checked = appData.hide_on_shortcut || false;
                 }
 
                 // Load agent configuration if agent type
@@ -900,6 +910,7 @@ async function saveApp() {
             const openExternalLinks = appType === 'webapp' ? document.getElementById('open-external-links').checked : null;
             const enableOauth = appType === 'webapp' ? document.getElementById('enable-oauth').checked : null;
             const alwaysOnTop = (appType === 'webapp' || appType === 'tui') ? document.getElementById('always-on-top').checked : null;
+            const hideOnShortcut = (appType === 'webapp' || appType === 'tui') ? document.getElementById('hide-on-shortcut').checked : null;
 
             // Get auto-close timeout (null if disabled, otherwise the number value)
             let autoCloseTimeout = null;
@@ -932,7 +943,8 @@ async function saveApp() {
                     open_external_links: openExternalLinks,
                     enable_oauth: enableOauth,
                     auto_close_timeout: autoCloseTimeout,
-                    always_on_top: alwaysOnTop
+                    always_on_top: alwaysOnTop,
+                    hide_on_shortcut: hideOnShortcut
                 }
             });
             
@@ -972,6 +984,7 @@ async function saveApp() {
             const openExternalLinks = appType === 'webapp' ? document.getElementById('open-external-links').checked : null;
             const enableOauth = appType === 'webapp' ? document.getElementById('enable-oauth').checked : null;
             const alwaysOnTop = (appType === 'webapp' || appType === 'tui') ? document.getElementById('always-on-top').checked : null;
+            const hideOnShortcut = (appType === 'webapp' || appType === 'tui') ? document.getElementById('hide-on-shortcut').checked : null;
 
             // Get auto-close timeout (null if disabled, otherwise the number value)
             let autoCloseTimeout = null;
@@ -1001,7 +1014,8 @@ async function saveApp() {
                     open_external_links: openExternalLinks,
                     enable_oauth: enableOauth,
                     auto_close_timeout: autoCloseTimeout,
-                    always_on_top: alwaysOnTop
+                    always_on_top: alwaysOnTop,
+                    hide_on_shortcut: hideOnShortcut
                 }
             });
             

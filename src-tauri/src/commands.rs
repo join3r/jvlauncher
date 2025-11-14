@@ -37,6 +37,7 @@ pub fn create_app(
 
     // Register global shortcut if provided
     let global_shortcut = new_app.global_shortcut.clone();
+    let hide_on_shortcut = new_app.hide_on_shortcut.unwrap_or(false);
 
     let app_id = database::create_app(&pool, new_app, session_dir)
         .map_err(|e| format!("Failed to create app: {}", e))?;
@@ -44,7 +45,7 @@ pub fn create_app(
     // Register the global shortcut for this app
     if let Some(shortcut) = global_shortcut {
         if !shortcut.is_empty() {
-            if let Err(e) = crate::shortcut_manager::register_app_shortcut(&app_handle, app_id, &shortcut) {
+            if let Err(e) = crate::shortcut_manager::register_app_shortcut(&app_handle, app_id, &shortcut, hide_on_shortcut) {
                 eprintln!("Failed to register global shortcut for app {}: {}", app_id, e);
             }
         }
@@ -71,7 +72,7 @@ pub fn update_app(pool: State<DbPool>, app_handle: AppHandle, app: App) -> Resul
     if let Some(old) = &old_app {
         if let Some(old_shortcut) = &old.global_shortcut {
             if !old_shortcut.is_empty() {
-                let _ = crate::shortcut_manager::unregister_app_shortcut(&app_handle, old_shortcut);
+                let _ = crate::shortcut_manager::unregister_app_shortcut(&app_handle, app.id, old_shortcut);
             }
         }
     }
@@ -83,7 +84,8 @@ pub fn update_app(pool: State<DbPool>, app_handle: AppHandle, app: App) -> Resul
     // Register new global shortcut if provided
     if let Some(new_shortcut) = &app.global_shortcut {
         if !new_shortcut.is_empty() {
-            if let Err(e) = crate::shortcut_manager::register_app_shortcut(&app_handle, app.id, new_shortcut) {
+            let hide_on_shortcut = app.hide_on_shortcut.unwrap_or(false);
+            if let Err(e) = crate::shortcut_manager::register_app_shortcut(&app_handle, app.id, new_shortcut, hide_on_shortcut) {
                 eprintln!("Failed to register global shortcut for app {}: {}", app.id, e);
             }
         }
@@ -110,7 +112,7 @@ pub fn delete_app(pool: State<DbPool>, app_handle: AppHandle, app_id: i64) -> Re
     if let Some(app_data) = app {
         if let Some(shortcut) = &app_data.global_shortcut {
             if !shortcut.is_empty() {
-                let _ = crate::shortcut_manager::unregister_app_shortcut(&app_handle, shortcut);
+                let _ = crate::shortcut_manager::unregister_app_shortcut(&app_handle, app_id, shortcut);
             }
         }
     }
