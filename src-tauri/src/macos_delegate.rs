@@ -176,3 +176,72 @@ pub fn activate_app_by_bundle_id(_bundle_id: &str) -> bool {
     false
 }
 
+/// Bring a Tauri window to front using native macOS APIs
+/// This is more reliable than Tauri's set_focus() for non-always-on-top windows
+#[cfg(target_os = "macos")]
+pub fn bring_window_to_front(window: &tauri::WebviewWindow) {
+    use cocoa::base::nil;
+    use objc::runtime::YES;
+
+    unsafe {
+        // Get the native NSWindow
+        if let Ok(ns_window) = window.ns_window() {
+            let ns_window = ns_window as id;
+
+            // Check if window is minimized and deminiaturize if needed
+            let is_miniaturized: bool = msg_send![ns_window, isMiniaturized];
+            if is_miniaturized {
+                let _: () = msg_send![ns_window, deminiaturize: nil];
+            }
+
+            // Make sure window is visible
+            let _: () = msg_send![ns_window, setIsVisible: YES];
+
+            // Activate the application using NSRunningApplication
+            let current_app: id = msg_send![class!(NSRunningApplication), currentApplication];
+            let options: usize = 1 << 1; // NSApplicationActivateIgnoringOtherApps
+            let _: bool = msg_send![current_app, activateWithOptions: options];
+
+            // Order front regardless of app activation state
+            let _: () = msg_send![ns_window, orderFrontRegardless];
+            
+            // Ensure it's the key window
+            let _: () = msg_send![ns_window, makeKeyWindow];
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn bring_window_to_front(_window: &tauri::WebviewWindow) {
+    // No-op on non-macOS platforms
+}
+
+/// Helper to safely switch focus from launcher to target window
+/// Handles the timing issues with hiding the launcher window on macOS
+pub fn switch_focus_and_hide_launcher(app_handle: &tauri::AppHandle, target_window: &tauri::WebviewWindow) {
+    use tauri::Manager;
+    let target_clone = target_window.clone();
+    let app_handle_clone = app_handle.clone();
+    
+    std::thread::spawn(move || {
+        // Wait for macOS animations/focus switching to settle
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        
+        let app_handle_for_closure = app_handle_clone.clone();
+        // Run UI operations on main thread
+        let _ = app_handle_clone.run_on_main_thread(move || {
+            // Hide launcher
+            if let Some(main_window) = app_handle_for_closure.get_webview_window("main") {
+                let _ = main_window.hide();
+            }
+            
+            // Force activate target window
+            #[cfg(target_os = "macos")]
+            bring_window_to_front(&target_clone);
+            
+            // Ensure internal state is updated
+            let _ = target_clone.set_focus();
+        });
+    });
+}
+

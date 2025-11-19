@@ -74,10 +74,16 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
 
     // Check if window already exists
     if let Some(existing_window) = app_handle.get_webview_window(&window_label) {
-        // If window exists, capture current app then show and focus it
-        crate::shortcut_manager::capture_current_app();
-        existing_window.show()?;
-        existing_window.set_focus()?;
+        // On macOS, use native APIs to reliably bring window to front
+        // This handles visibility, unminimizing, and focusing all through native APIs
+        // which is more reliable than Tauri's methods for non-always-on-top windows
+        crate::macos_delegate::bring_window_to_front(&existing_window);
+        let _ = existing_window.set_focus();
+
+        // Hide the launcher window AFTER bringing the target window to front
+        // Use the helper to handle the delicate timing on macOS
+        crate::macos_delegate::switch_focus_and_hide_launcher(app_handle, &existing_window);
+
         return Ok(());
     }
 
@@ -525,10 +531,16 @@ fn launch_webapp(app: &App, app_handle: &AppHandle, pool: &DbPool) -> Result<()>
         builder = builder.always_on_top(true);
     }
 
-    // Capture the current app before creating and showing the window
-    crate::shortcut_manager::capture_current_app();
-
     let window = builder.build()?;
+
+    // Ensure the new window is brought to front
+    // This is critical when the launcher window hides, as focus might shift to another app
+    crate::macos_delegate::bring_window_to_front(&window);
+    let _ = window.set_focus();
+
+    // Hide the launcher window AFTER creating and focusing the new window
+    // Use the helper to handle the delicate timing on macOS
+    crate::macos_delegate::switch_focus_and_hide_launcher(app_handle, &window);
 
     // Register window with activity tracker for auto-close feature
     if let Some(tracker) = app_handle.try_state::<crate::webapp_auto_close::WebappActivityTracker>() {
@@ -605,8 +617,15 @@ fn launch_tui(app: &App, app_handle: &AppHandle) -> Result<()> {
     if let Some(existing_window) = app_handle.get_webview_window(&window_label) {
         // If window exists, capture current app then show and focus it
         crate::shortcut_manager::capture_current_app();
+
+        // Ensure window is visible and not minimized
         existing_window.show()?;
-        existing_window.set_focus()?;
+        existing_window.unminimize()?;
+
+        // On macOS, use native APIs to reliably bring window to front
+        // This is more reliable than set_focus() for non-always-on-top windows
+        crate::macos_delegate::bring_window_to_front(&existing_window);
+
         return Ok(());
     }
 

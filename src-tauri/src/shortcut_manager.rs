@@ -208,23 +208,38 @@ pub fn register_app_shortcut(
                         }
                         return;
                     } else if is_visible {
-                        // Window is visible but not focused, capture current app then focus it
-                        capture_previous_app();
+                        // Window is visible but not focused, focus it
+                        // On macOS, use native APIs to reliably bring window to front
+                        // This handles unminimizing through native APIs
+                        crate::macos_delegate::bring_window_to_front(&window);
                         let _ = window.set_focus();
+
+                        // Hide the launcher window AFTER focusing the target
+                        // Use the helper to handle the delicate timing on macOS
+                        crate::macos_delegate::switch_focus_and_hide_launcher(&app_handle_clone, &window);
+
                         return;
                     } else if should_hide {
                         // Window exists but is hidden, show and focus it
-                        capture_previous_app();
-                        let _ = window.show();
+                        // On macOS, use native APIs to reliably bring window to front
+                        // This handles visibility and unminimizing through native APIs
+                        crate::macos_delegate::bring_window_to_front(&window);
                         let _ = window.set_focus();
+
+                        // Hide the launcher window AFTER focusing the target
+                        // Use the helper to handle the delicate timing on macOS
+                        crate::macos_delegate::switch_focus_and_hide_launcher(&app_handle_clone, &window);
+
                         return;
                     }
                     // If window exists but is hidden and not in hide mode, fall through to launch
                 }
             }
 
-            // Window doesn't exist or is hidden (in close mode), capture current app then launch
-            capture_previous_app();
+            // Window doesn't exist or is hidden (in close mode), hide launcher then launch
+            if let Some(main_window) = app_handle_clone.get_webview_window("main") {
+                let _ = main_window.hide();
+            }
             let _ = app_handle_clone.emit("launch-app-by-shortcut", app_id);
         }
     })?;

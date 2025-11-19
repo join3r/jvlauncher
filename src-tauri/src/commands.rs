@@ -570,8 +570,13 @@ pub fn open_settings_window(app_handle: AppHandle) -> Result<(), String> {
 
     // Check if window already exists
     if let Some(window) = app_handle.get_webview_window(window_label) {
+        // Ensure window is visible and not minimized
         window.show().map_err(|e| format!("Failed to show window: {}", e))?;
-        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        window.unminimize().map_err(|e| format!("Failed to unminimize window: {}", e))?;
+
+        // On macOS, use native APIs to reliably bring window to front
+        crate::macos_delegate::bring_window_to_front(&window);
+
         return Ok(());
     }
 
@@ -618,8 +623,13 @@ pub fn open_add_app_window(app_handle: AppHandle) -> Result<(), String> {
 
     // Check if window already exists
     if let Some(window) = app_handle.get_webview_window(window_label) {
+        // Ensure window is visible and not minimized
         window.show().map_err(|e| format!("Failed to show window: {}", e))?;
-        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        window.unminimize().map_err(|e| format!("Failed to unminimize window: {}", e))?;
+
+        // On macOS, use native APIs to reliably bring window to front
+        crate::macos_delegate::bring_window_to_front(&window);
+
         return Ok(());
     }
 
@@ -665,8 +675,13 @@ pub fn open_edit_app_window(app_handle: AppHandle, app_id: i64) -> Result<(), St
 
     // Check if window already exists
     if let Some(window) = app_handle.get_webview_window(&window_label) {
+        // Ensure window is visible and not minimized
         window.show().map_err(|e| format!("Failed to show window: {}", e))?;
-        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        window.unminimize().map_err(|e| format!("Failed to unminimize window: {}", e))?;
+
+        // On macOS, use native APIs to reliably bring window to front
+        crate::macos_delegate::bring_window_to_front(&window);
+
         return Ok(());
     }
 
@@ -936,8 +951,13 @@ pub fn open_ai_queue_window(app_handle: AppHandle) -> Result<(), String> {
 
     // Check if window already exists
     if let Some(window) = app_handle.get_webview_window(window_label) {
+        // Ensure window is visible and not minimized
         window.show().map_err(|e| format!("Failed to show window: {}", e))?;
-        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        window.unminimize().map_err(|e| format!("Failed to unminimize window: {}", e))?;
+
+        // On macOS, use native APIs to reliably bring window to front
+        crate::macos_delegate::bring_window_to_front(&window);
+
         return Ok(());
     }
 
@@ -978,8 +998,13 @@ pub fn open_queue_detail_window(app_handle: AppHandle, queue_id: i64) -> Result<
 
     // Check if window already exists
     if let Some(window) = app_handle.get_webview_window(&window_label) {
+        // Ensure window is visible and not minimized
         window.show().map_err(|e| format!("Failed to show window: {}", e))?;
-        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        window.unminimize().map_err(|e| format!("Failed to unminimize window: {}", e))?;
+
+        // On macOS, use native APIs to reliably bring window to front
+        crate::macos_delegate::bring_window_to_front(&window);
+
         return Ok(());
     }
 
@@ -1030,8 +1055,13 @@ pub fn open_notifications_window(app_handle: AppHandle) -> Result<(), String> {
 
     // Check if window already exists
     if let Some(window) = app_handle.get_webview_window(window_label) {
+        // Ensure window is visible and not minimized
         window.show().map_err(|e| format!("Failed to show window: {}", e))?;
-        window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+        window.unminimize().map_err(|e| format!("Failed to unminimize window: {}", e))?;
+
+        // On macOS, use native APIs to reliably bring window to front
+        crate::macos_delegate::bring_window_to_front(&window);
+
         return Ok(());
     }
 

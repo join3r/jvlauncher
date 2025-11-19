@@ -103,6 +103,10 @@ pub fn create_terminal_window(
 
     let window = builder.build()?;
 
+    // Ensure the new window is brought to front
+    #[cfg(target_os = "macos")]
+    crate::macos_delegate::bring_window_to_front(&window);
+
     // Register window with shortcut manager for toggle behavior
     crate::shortcut_manager::register_app_window(app_id, window_label.clone());
 
