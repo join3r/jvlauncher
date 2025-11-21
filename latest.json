@@ -1,10 +1,10 @@
 {
-  "version": "0.1.8",
-  "date": "2025-11-10T08:12:30Z",
+  "version": "0.1.9",
+  "date": "2025-11-21T21:29:44Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIG1pbmlzaWduIHNlY3JldCBrZXkKUlVRQzJIRm1kQ1FuUzl2Qmp0YmZPaUpNUlNZQWlqSndBWXpaeXJ0emNKUVdzVmxJdDUyODFEMEpOb2xSMmVVZVJ5ZmJkUlFPSThMUWFVbE03a2YxNDJzMFA1SHhRNVVuU2dnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyNzYyMzQ1CWZpbGU6anZsYXVuY2hlcl8wLjEuOF9hYXJjaDY0LmRtZy50YXIuZ3oJaGFzaGVkClVSV2szRTZHNFZtZDBhaVl3cWxnVktSWkp2eGZwWmc0UGJ4OGJGZnM0QWwwQ3UxaHBWQ2NUN2xQSW12emJqakFzK3JnZ28vMGluSUw4NXRINGdPVUNnPT0K",
-      "url": "https://github.com/join3r/jvlauncher/releases/download/v0.1.8/jvlauncher_0.1.8_aarch64.dmg.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIG1pbmlzaWduIHNlY3JldCBrZXkKUlVRQzJIRm1kQ1FuUy9FaEk4dVIyVkw4cDVHeUxEY0IxRnl0R1dIWjZ3WG5ZT0lTTUwyZDI1Rm96YmpETnhQM25ndjhHM1lOR01BZVNOdE92MTRFQlF3bnJvRHdKNy9waUFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzNzYwNTc0CWZpbGU6anZsYXVuY2hlcl8wLjEuOV9hYXJjaDY0LmRtZy50YXIuZ3oJaGFzaGVkClgyY0hmVGJXazZwRDY2eTd6b1RRNXZnaCtXR0J1MEdOc0NKZVpzY1ZTeWExQ2U4M2kwcnFRR2pQMHhZSGMzdUwyOXNjdlRPVUdFeUI2Q2NmMW1Wc0NBPT0K",
+      "url": "https://github.com/join3r/jvlauncher/releases/download/v0.1.9/jvlauncher_0.1.9_aarch64.dmg.tar.gz"
     }
   }
 }
